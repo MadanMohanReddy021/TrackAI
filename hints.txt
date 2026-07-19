@@ -1,0 +1,114 @@
+import LoginScreen from "../src/screens/Auth/LoginScreen";
+
+export default function App() {
+  return <LoginScreen />;
+}
+import HomeScreen from "../src/screens/Home/HomeScreen";
+
+export default function App() {
+  return <HomeScreen />;
+}
+
+
+
+
+TrackAI
+│
+├── app/
+│   ├── index.tsx              // Temporary entry screen
+│   └── _layout.tsx            // Keep default Expo Router layout
+│
+├── src/
+│   │
+│   ├── screens/
+│   │   ├── Splash/
+│   │   │   └── SplashScreen.tsx
+│   │   │
+│   │   ├── Onboarding/
+│   │   │   ├── Onboarding1.tsx
+│   │   │   ├── Onboarding2.tsx
+│   │   │   ├── Onboarding3.tsx
+│   │   │   └── Onboarding4.tsx
+│   │   │
+│   │   ├── Auth/
+│   │   │   ├── LoginScreen.tsx
+│   │   │   ├── SignupScreen.tsx
+│   │   │   └── ForgotPassword.tsx
+│   │   │
+│   │   ├── Home/
+│   │   │   └── HomeScreen.tsx
+│   │   │
+│   │   ├── Camera/
+│   │   │   ├── CameraScreen.tsx
+│   │   │   ├── ScanningScreen.tsx
+│   │   │   └── ResultScreen.tsx
+│   │   │
+│   │   ├── Food/
+│   │   │   ├── FoodDetails.tsx
+│   │   │   ├── AddMeal.tsx
+│   │   │   ├── EditMeal.tsx
+│   │   │   └── MealHistory.tsx
+│   │   │
+│   │   ├── Progress/
+│   │   │   ├── ProgressScreen.tsx
+│   │   │   ├── WeightScreen.tsx
+│   │   │   └── NutritionScreen.tsx
+│   │   │
+│   │   ├── Water/
+│   │   │   └── WaterScreen.tsx
+│   │   │
+│   │   ├── Profile/
+│   │   │   ├── ProfileScreen.tsx
+│   │   │   └── EditProfile.tsx
+│   │   │
+│   │   ├── Settings/
+│   │   │   └── SettingsScreen.tsx
+│   │   │
+│   │   └── Premium/
+│   │       └── PremiumScreen.tsx
+│   │
+│   ├── components/
+│   │   ├── Button/
+│   │   ├── Card/
+│   │   ├── Input/
+│   │   ├── Header/
+│   │   ├── BottomSheet/
+│   │   ├── ProgressBar/
+│   │   ├── NutritionCard/
+│   │   ├── WaterCard/
+│   │   ├── CircularProgress/
+│   │   ├── Loading/
+│   │   └── EmptyState/
+│   │
+│   ├── assets/
+│   │   ├── images/
+│   │   ├── icons/
+│   │   ├── fonts/
+│   │   ├── animations/
+│   │   └── svg/
+│   │
+│   ├── constants/
+│   │   ├── colors.ts
+│   │   ├── fonts.ts
+│   │   ├── spacing.ts
+│   │   ├── sizes.ts
+│   │   └── theme.ts
+│   │
+│   ├── hooks/
+│   │
+│   ├── services/
+│   │   ├── api.ts
+│   │   ├── auth.ts
+│   │   ├── ai.ts
+│   │   └── storage.ts
+│   │
+│   ├── store/
+│   │
+│   ├── utils/
+│   │
+│   ├── types/
+│   │
+│   └── data/
+│
+├── package.json
+└── app.json
