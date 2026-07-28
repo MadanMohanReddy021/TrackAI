@@ -1,5 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import {
+  ArrowRight,
+  BarChart3,
+  Camera,
+  Dumbbell,
+  Mic,
+  Sparkles,
+  Star,
+} from "lucide-react-native";
 import { useEffect } from "react";
 import {
   Image,
@@ -10,33 +19,21 @@ import {
   View,
 } from "react-native";
 
-import {
-  ArrowRight,
-  BarChart3,
-  Camera,
-  Dumbbell,
-  Mic,
-  Sparkles,
-  Star,
-} from "lucide-react-native";
-
 
 const LandingScreen = () => {
 
- useEffect(() => {
-  const checkUser = async () => {
-    setTimeout(async () => {
-      const email = await AsyncStorage.getItem("token");
+useEffect(() => {
+  console.log("landing");
 
-      if (email) {
-        router.replace("/dashboard");
-      }
-      // no else here - stay on landing page
-    }, 3000);
-  };
+  const timer = setTimeout(async () => {
+    const token = await AsyncStorage.getItem("token");
 
-  checkUser();
+    if (token) {
+      router.replace("/dashboard");
+    }
+  }, 3000);
 
+  return () => clearTimeout(timer);
 }, []);
 
 

@@ -1,4 +1,5 @@
-const API = "https://your-api.com";
+import BASE_URL from "@/storage/ipAdress";
+const API = BASE_URL;
 
 export async function sendTranscript(text: string) {
   const response = await fetch(`${API}/voice-log`, {

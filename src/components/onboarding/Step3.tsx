@@ -1,12 +1,14 @@
 import React from "react";
 import {
-    Text,
-    TextInput,
-    View,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
+import { useTheme } from "@/context/ThemeContext";
 import { Goal } from "../../constants/onboarding";
-import styles from "../../styles/onboardingStyles";
+import { createStyles } from "../../styles/onboardingStyles";
+
 
 interface Step3Props {
   goal?: Goal;
@@ -15,6 +17,7 @@ interface Step3Props {
   setTarget: (value: string) => void;
 }
 
+
 const Step3: React.FC<Step3Props> = ({
   goal,
   weight,
@@ -22,10 +25,16 @@ const Step3: React.FC<Step3Props> = ({
   setTarget,
 }) => {
 
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
+
+
   const currentWeight = Number(weight);
   const targetWeight = Number(target);
 
   let difference = 0;
+
 
   if (
     goal === "weight_loss" &&
@@ -37,6 +46,7 @@ const Step3: React.FC<Step3Props> = ({
       currentWeight - targetWeight
     );
   }
+
 
   if (
     (goal === "weight_gain" ||
@@ -50,7 +60,9 @@ const Step3: React.FC<Step3Props> = ({
     );
   }
 
+
   if (goal === "strength") {
+
     return (
       <View>
 
@@ -58,15 +70,17 @@ const Step3: React.FC<Step3Props> = ({
           Strength Focus
         </Text>
 
+
         <Text style={styles.subHeading}>
           No target weight is needed.
         </Text>
+
 
         <View style={styles.card}>
 
           <Text
             style={{
-              color: "#8A8579",
+              color: colors.secondaryText,
               fontSize: 15,
               lineHeight: 22,
             }}
@@ -82,6 +96,7 @@ const Step3: React.FC<Step3Props> = ({
     );
   }
 
+
   return (
     <View>
 
@@ -89,23 +104,29 @@ const Step3: React.FC<Step3Props> = ({
         Target Weight
       </Text>
 
+
       <Text style={styles.subHeading}>
         Enter the weight you want to reach.
       </Text>
 
+
       <TextInput
         style={styles.input}
         placeholder="Target Weight (kg)"
+        placeholderTextColor={colors.secondaryText}
         keyboardType="decimal-pad"
         value={target}
         onChangeText={setTarget}
       />
 
+
       {difference > 0 && (
+
         <View style={styles.card}>
 
           <Text
             style={{
+              color: colors.text,
               fontWeight: "600",
               fontSize: 16,
               marginBottom: 8,
@@ -116,9 +137,10 @@ const Step3: React.FC<Step3Props> = ({
               : "Weight to Gain"}
           </Text>
 
+
           <Text
             style={{
-              color: "#8A8579",
+              color: colors.secondaryText,
               fontSize: 15,
             }}
           >
@@ -126,10 +148,12 @@ const Step3: React.FC<Step3Props> = ({
           </Text>
 
         </View>
+
       )}
 
     </View>
   );
 };
+
 
 export default Step3;

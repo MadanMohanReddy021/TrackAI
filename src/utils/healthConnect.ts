@@ -1,62 +1,91 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
+  aggregateRecord,
   initialize,
-  readRecords,
-  requestPermission,
+  requestPermission
 } from "react-native-health-connect";
 
-export const getHealthData = async () => {
+export async function requestHealthPermissions() {
+
   try {
+
     const initialized = await initialize();
 
     if (!initialized) {
-      console.log("Health Connect not available");
-      return;
+      return false;
     }
 
-    await requestPermission([
+
+    const permissions = [
       {
         accessType: "read",
         recordType: "Steps",
       },
-    ]);
+    ];
 
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
 
-    const end = new Date();
+    const result =
+      await requestPermission(permissions);
 
-    const steps = await readRecords("Steps", {
+
+    return result.length > 0;
+
+
+  } catch(error){
+
+    console.log(
+      "Health permission error",
+      error
+    );
+
+    return false;
+  }
+
+}
+
+
+
+
+
+
+export async function getHealthData() {
+
+  try {
+
+    const now = new Date();
+
+    const startTime = new Date();
+    startTime.setHours(0, 0, 0, 0);
+
+
+    console.log({
+      startTime: startTime.toISOString(),
+      endTime: now.toISOString()
+    });
+
+
+    const result = await aggregateRecord({
+      recordType: "Steps",
       timeRangeFilter: {
         operator: "between",
-        startTime: start.toISOString(),
-        endTime: end.toISOString(),
+        startTime: startTime.toISOString(),
+        endTime: now.toISOString(),
       },
     });
 
-    // Calculate total steps
-    const totalSteps = steps.records.reduce(
-      (sum, record) => sum + record.count,
-      0
-    );
 
-    // Data to save
-    const stepData = {
-      totalSteps,
-      records: steps.records,
-      updatedAt: new Date().toISOString(),
+    return {
+      totalSteps: result.COUNT_TOTAL ?? 0
     };
 
-    // Save to AsyncStorage
-    await AsyncStorage.setItem(
-      "@health_steps",
-      JSON.stringify(stepData)
+
+  } catch(error) {
+
+    console.log(
+      "Health aggregate error",
+      error
     );
 
-    console.log("Steps saved locally");
-
-    return stepData;
-  } catch (error) {
-    console.log(error);
+    return null;
   }
-};
+
+}

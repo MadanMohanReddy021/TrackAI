@@ -6,7 +6,9 @@ import {
   View,
 } from "react-native";
 
-import styles from "../../styles/onboardingStyles";
+import { useTheme } from "@/context/ThemeContext";
+import { createStyles } from "../../styles/onboardingStyles";
+
 
 interface Step1Props {
   name: string;
@@ -20,6 +22,7 @@ interface Step1Props {
   setWeight: (value: string) => void;
 }
 
+
 const Step1: React.FC<Step1Props> = ({
   name,
   age,
@@ -30,31 +33,53 @@ const Step1: React.FC<Step1Props> = ({
   setHeight,
   setWeight,
 }) => {
-  const [heightUnit, setHeightUnit] = useState<"cm" | "inch">("cm");
-  const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
+
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
+
+
+  const [heightUnit, setHeightUnit] =
+    useState<"cm" | "inch">("cm");
+
+  const [weightUnit, setWeightUnit] =
+    useState<"kg" | "lbs">("kg");
+
 
   return (
     <View>
-      <Text style={styles.heading}>Tell us about yourself</Text>
+
+      <Text style={styles.heading}>
+        Tell us about yourself
+      </Text>
+
 
       <TextInput
         style={styles.input}
         placeholder="Your Name"
+        placeholderTextColor={colors.secondaryText}
         value={name}
         onChangeText={setName}
       />
 
+
       <TextInput
         style={styles.input}
         placeholder="Age"
+        placeholderTextColor={colors.secondaryText}
         keyboardType="number-pad"
         value={age}
         onChangeText={setAge}
       />
 
-      <Text style={styles.sectionTitle}>Height</Text>
+
+      <Text style={styles.sectionTitle}>
+        Height
+      </Text>
+
 
       <View style={styles.unitContainer}>
+
         <TouchableOpacity
           style={[
             styles.unitButton,
@@ -62,8 +87,11 @@ const Step1: React.FC<Step1Props> = ({
           ]}
           onPress={() => setHeightUnit("cm")}
         >
-          <Text>cm</Text>
+          <Text style={{color: colors.text}}>
+            cm
+          </Text>
         </TouchableOpacity>
+
 
         <TouchableOpacity
           style={[
@@ -72,21 +100,31 @@ const Step1: React.FC<Step1Props> = ({
           ]}
           onPress={() => setHeightUnit("inch")}
         >
-          <Text>inch</Text>
+          <Text style={{color: colors.text}}>
+            inch
+          </Text>
         </TouchableOpacity>
+
       </View>
+
 
       <TextInput
         style={styles.input}
         placeholder={`Height (${heightUnit})`}
+        placeholderTextColor={colors.secondaryText}
         keyboardType="decimal-pad"
         value={height}
         onChangeText={setHeight}
       />
 
-      <Text style={styles.sectionTitle}>Weight</Text>
+
+      <Text style={styles.sectionTitle}>
+        Weight
+      </Text>
+
 
       <View style={styles.unitContainer}>
+
         <TouchableOpacity
           style={[
             styles.unitButton,
@@ -94,8 +132,11 @@ const Step1: React.FC<Step1Props> = ({
           ]}
           onPress={() => setWeightUnit("kg")}
         >
-          <Text>kg</Text>
+          <Text style={{color: colors.text}}>
+            kg
+          </Text>
         </TouchableOpacity>
+
 
         <TouchableOpacity
           style={[
@@ -104,19 +145,26 @@ const Step1: React.FC<Step1Props> = ({
           ]}
           onPress={() => setWeightUnit("lbs")}
         >
-          <Text>lbs</Text>
+          <Text style={{color: colors.text}}>
+            lbs
+          </Text>
         </TouchableOpacity>
+
       </View>
+
 
       <TextInput
         style={styles.input}
         placeholder={`Weight (${weightUnit})`}
+        placeholderTextColor={colors.secondaryText}
         keyboardType="decimal-pad"
         value={weight}
         onChangeText={setWeight}
       />
+
     </View>
   );
 };
+
 
 export default Step1;

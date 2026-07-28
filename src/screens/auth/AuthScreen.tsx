@@ -1,122 +1,408 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
+import BASE_URL from "../../storage/ipAdress";
+import { createStyles } from "../../styles/authStyles";
+import { DarkTheme, LightTheme } from "../../theme/colors";
+
 import {
   SafeAreaView, ScrollView, StatusBar,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View
 } from "react-native";
+import { configureGoogle } from "../../config/google";
+
+
+
 
 
 export default function AuthScreen() {
   const [tab, setTab] = useState<"login" | "signup">("signup");
+  const [otp,setOtp]=useState("");
+  const [loginOtpRequired, setLoginOtpRequired] = useState(false);
+const [loginOtp, setLoginOtp] = useState("");
+  const [otpSent,setOtpSent]=useState(false); 
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
-  const BASE_URL = "http://172.22.204.4:3000";
+  
   const isSignup = tab === "signup";
- const handleSignup = async () => {
-  try {
-    if (!name.trim()) {
-    alert("Please enter your name");
-    return;
-  }
+  const { theme } = useTheme();
 
-  if (!email.trim()) {
-    alert("Please enter your email");
-    return;
-  }
+const colors =
+  theme === "dark"
+    ? DarkTheme
+    : LightTheme;
 
-  if (!password.trim()) {
-    alert("Please enter your password");
-    return;
-  }
+const styles = createStyles(colors);
+  useEffect(()=>{
+console.log(BASE_URL);
+  configureGoogle();
 
-  if (password.length < 6) {
-    alert("Password must be at least 6 characters");
-    return;
-  }
-  const userId=name;
-    const response = await fetch(`${BASE_URL}/signup`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId,
-        email,
-        password,
-      }),
-    });
-    
-    const data = await response.json();
-    console.log("Signup Response:", data);
-    if (response.ok) {
-      // Save email locally
-      await AsyncStorage.setItem("userEmail", email);
-      // await AsyncStorage.setItem("token", data.token);
-      console.log("Signup Success");
+},[]);
+const handleGoogleLogin = async()=>{
 
-      // router.replace("/home");
-    } else {
-      alert(data.message || "Signup Failed");
-    }
-  } catch (error) {
-    console.error(error);
-  }
-};
-const handleLogin = async () => {
-  try {
-    
+  try{
 
-  if (!email.trim()) {
-    alert("Please enter your email");
-    return;
-  }
+    await GoogleSignin.hasPlayServices();
 
-  if (!password.trim()) {
-    alert("Please enter your password");
-    return;
-  }
 
-  if (password.length < 6) {
-    alert("Password must be at least 6 characters");
-    return;
-  }
-    const response = await fetch(`${BASE_URL}/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        password,
-      }),
-    });
+    const response =
+      await GoogleSignin.signIn();
 
-    const data = await response.json();
 
-    if (response.ok) {
-      await AsyncStorage.setItem("userid",
-    String(data.userId)
-  ); 
-  console.log(data);
-  console.log("User ID saved:", data.userId);
-      // Save email locally
-      await AsyncStorage.setItem("token", email);
-      alert(data.message || "Invalid Credentials");
-      console.log("Login Success");
+    const tokens =
+      await GoogleSignin.getTokens();
+
+
+    const idToken =
+      tokens.idToken;
+
+
+    console.log(
+      "Google Token:",
+      idToken
+    );
+
+
+    const backendResponse =
+    await fetch(
+      `${BASE_URL}/auth/google`,
+      {
+        method:"POST",
+
+        headers:{
+          "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+          idToken
+        })
+      }
+    );
+
+
+    const data =
+      await backendResponse.json();
+
+
+    console.log(
+      "Backend:",
+      data
+    );
+
+
+    if(backendResponse.ok){
+
+
+      await AsyncStorage.setItem(
+        "userid",
+        String(data.userId)
+      );
+
+
+      await AsyncStorage.setItem(
+        "token",
+        data.token
+      );
+
 
       router.replace("/dashboard");
-    } else {
-      alert(data.message || "Invalid Credentials");
+
     }
-  } catch (error) {
-    console.error(error);
+    else{
+
+      alert(
+        data.message ||
+        "Google login failed"
+      );
+
+    }
+
+
   }
+  catch(error){
+
+    console.log(
+      "Google Login Error",
+      error
+    );
+
+  }
+
+};
+ const handleSignup = async () => {
+
+  try {
+
+    const response = await fetch(
+      `${BASE_URL}/signup`,
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+
+          name,
+          email,
+          password,
+
+        }),
+      }
+    );
+
+
+    const data = await response.json();
+
+
+    if (response.status==400) {
+ await AsyncStorage.setItem(
+        "userid",
+        String(data.userid)
+      );
+      setOtpSent(true);
+
+      alert(
+        "OTP sent to your email"
+      );
+
+    } 
+    else {
+
+      alert(
+        data.message ||
+        "Signup failed"
+      );
+
+    }
+
+
+  } catch(error){
+
+    console.log(error);
+
+  }
+
+};
+const handleLogin = async () => {
+
+  try {
+
+    if (!email.trim()) {
+      alert("Please enter your email");
+      return;
+    }
+
+    if (!password.trim()) {
+      alert("Please enter your password");
+      return;
+    }
+
+
+    const response = await fetch(
+      `${BASE_URL}/login`,
+      {
+        method:"POST",
+
+        headers:{
+          "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+          email,
+          password
+        })
+      }
+    );
+
+
+    const data = await response.json();
+
+
+    console.log("Login Response:", data);
+
+
+console.log(response.ok);
+    // LOGIN SUCESS
+    if(response.ok){
+      await AsyncStorage.setItem(
+        "userid",
+        String(data.userid)
+      );
+    console.log(response.status);
+      if(data.token){
+        await AsyncStorage.setItem(
+          "token",
+          data.token
+        );
+      }
+      router.replace("/dashboard");
+    }
+    // OTP REQUIRED
+    else if(response.status === 400){
+
+await AsyncStorage.setItem(
+        "userid",
+        String(data.userid)
+      );
+      setLoginOtpRequired(true);
+
+
+      alert(
+        data.message ||
+        "OTP verification required"
+      );
+
+
+    }
+
+
+    else{
+
+
+      alert(
+        data.message ||
+        "Invalid credentials"
+      );
+
+
+    }
+
+
+
+  }
+  catch(error){
+
+    console.log(
+      "Login Error:",
+      error
+    );
+
+  }
+
+};
+const verifyOTP = async () => {
+
+  try {
+const userid = await AsyncStorage.getItem("userid");
+    const enteredOtp = isSignup
+      ? otp
+      : loginOtp;
+
+
+    if (!enteredOtp.trim()) {
+
+      alert("Please enter OTP");
+      return;
+
+    }
+
+
+    const response = await fetch(
+      `${BASE_URL}${
+        isSignup
+          ? "/signup/otpverify"
+          : "/signup/otpverify"
+      }`,
+      {
+        method:"POST",
+
+        headers:{
+          "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+          userid,
+
+          otp: enteredOtp
+
+        })
+
+      }
+    );
+
+
+    const data = await response.json();
+
+
+    console.log(
+      "OTP Verify Response:",
+      data
+    );
+
+
+    if(response.ok){
+
+
+      // Store userid from backend
+
+      await AsyncStorage.setItem(
+        "userid",
+        String(data.userId)
+      );
+
+
+      // Store token if backend sends
+
+      if(data.token){
+
+        await AsyncStorage.setItem(
+          "token",
+          data.token
+        );
+
+      }
+
+
+      // clear OTP
+
+      setOtp("");
+      setLoginOtp("");
+
+
+      // hide OTP boxes
+
+      setOtpSent(false);
+      setLoginOtpRequired(false);
+
+
+
+      router.replace(
+        "/dashboard"
+      );
+
+
+    }
+    else{
+
+
+      alert(
+        data.message ||
+        "Invalid OTP"
+      );
+
+
+    }
+
+
+  }
+  catch(error){
+
+    console.log(
+      "Verify OTP Error:",
+      error
+    );
+
+  }
+
 };
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
@@ -283,6 +569,7 @@ const [password, setPassword] = useState("");
               setShowPassword(!showPassword)
             }
           >
+
             <Ionicons
               name={
                 showPassword
@@ -295,18 +582,107 @@ const [password, setPassword] = useState("");
           </TouchableOpacity>
 
         </View>
+            {
+otpSent && (
 
+<>
+
+<Text style={styles.label}>
+Verification Code
+</Text>
+
+
+<TextInput
+
+style={styles.input}
+
+placeholder="Enter 6 digit OTP"
+
+placeholderTextColor="#999"
+
+keyboardType="number-pad"
+
+maxLength={6}
+
+value={otp}
+
+onChangeText={setOtp}
+
+/>
+
+</>
+
+)
+}
+{
+loginOtpRequired && (
+
+<>
+
+<Text style={styles.label}>
+Verification Code
+</Text>
+
+
+<TextInput
+
+style={styles.input}
+
+placeholder="Enter 6 digit OTP"
+
+placeholderTextColor="#999"
+
+keyboardType="number-pad"
+
+maxLength={6}
+
+value={loginOtp}
+
+onChangeText={setLoginOtp}
+
+/>
+
+
+</>
+
+)
+}
         {/* Button */}
 
-        <TouchableOpacity
+       <TouchableOpacity
   style={styles.button}
   onPress={() => {
-    if (isSignup) {
+
+  if(isSignup){
+
+    if(!otpSent){
+
       handleSignup();
-    } else {
-      handleLogin();
+
     }
-  }}
+    else{
+
+      verifyOTP();
+
+    }
+
+  }
+  else{
+
+    if(loginOtpRequired){
+
+      verifyOTP();
+
+    }
+    else{
+
+      handleLogin();
+
+    }
+
+  }
+
+}}
 >
   <Text style={styles.buttonText}>
     {isSignup ? "Start Free Today" : "Sign In"}
@@ -335,8 +711,10 @@ const [password, setPassword] = useState("");
 
         {/* Google */}
 
-        <TouchableOpacity style={styles.googleButton}>
-
+<TouchableOpacity
+style={styles.googleButton}
+onPress={handleGoogleLogin}
+>
           <Ionicons
             name="logo-google"
             size={22}
@@ -391,246 +769,3 @@ Your data is secure and encrypted
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
-
-  content: {
-  flex: 1,
-  paddingHorizontal: 24,
-  paddingTop: 40,
-  justifyContent: "center",
-  maxWidth: 500,
-  alignSelf: "center",
-  width: "100%",
-},
-scrollContent: {
-  flexGrow: 1,
-},
-  badge: {
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    backgroundColor: "#FFF4E5",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 100,
-    alignItems: "center",
-    marginBottom: 30,
-  },
-
-  badgeText: {
-    marginLeft: 8,
-    color: "#D97706",
-    fontWeight: "600",
-    fontSize: 13,
-  },
-
-  title: {
-    fontSize: 42,
-    fontWeight: "800",
-    lineHeight: 48,
-    color: "#111",
-  },
-
-  subtitle: {
-    marginTop: 18,
-    fontSize: 16,
-    color: "#666",
-    lineHeight: 25,
-    marginBottom: 35,
-  },
-
-  tabs: {
-    flexDirection: "row",
-    backgroundColor: "#F1F1F1",
-    borderRadius: 14,
-    padding: 5,
-    marginBottom: 35,
-  },
-
-  tab: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    flexDirection: "row",
-  },
-
-  activeTab: {
-    backgroundColor: "white",
-    borderRadius: 10,
-  },
-
-  tabText: {
-    marginLeft: 8,
-    color: "#777",
-    fontWeight: "600",
-  },
-
-  activeText: {
-    color: "#F59E0B",
-  },
-
-  label: {
-    marginBottom: 10,
-    color: "#222",
-    fontWeight: "600",
-    fontSize: 15,
-  },
-  heroCircle:{
-alignSelf:"center",
-width:170,
-height:170,
-borderRadius:100,
-backgroundColor:"#FFF5E6",
-justifyContent:"center",
-alignItems:"center",
-marginBottom:35,
-},
-
-chart:{
-flexDirection:"row",
-alignItems:"flex-end",
-},
-
-bar:{
-width:18,
-backgroundColor:"#F6C55B",
-marginHorizontal:5,
-borderRadius:4,
-},
-
-flag:{
-position:"absolute",
-right:45,
-top:35,
-},
-
-usersContainer:{
-marginTop:35,
-flexDirection:"row",
-alignItems:"center",
-},
-
-avatarRow:{
-flexDirection:"row",
-marginRight:18,
-},
-
-avatar:{
-width:38,
-height:38,
-borderRadius:20,
-backgroundColor:"#DDD",
-marginRight:-8,
-borderWidth:2,
-borderColor:"white",
-},
-
-rating:{
-fontSize:15,
-color:"#F59E0B",
-fontWeight:"700",
-},
-
-trusted:{
-fontSize:13,
-color:"#777",
-marginTop:2,
-},
-
-footer:{
-marginTop:35,
-flexDirection:"row",
-justifyContent:"center",
-alignItems:"center",
-},
-
-footerText:{
-marginLeft:8,
-color:"#999",
-fontSize:13,
-},
-
-  input: {
-    height: 58,
-    backgroundColor: "white",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#E8E8E8",
-    paddingHorizontal: 18,
-    marginBottom: 22,
-    fontSize: 15,
-  },
-
-  passwordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#E8E8E8",
-    paddingHorizontal: 18,
-    height: 58,
-  },
-
-  passwordInput: {
-    flex: 1,
-    fontSize: 15,
-  },
-
-  button: {
-    marginTop: 28,
-    height: 60,
-    backgroundColor: "#111",
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-  },
-
-  buttonText: {
-    color: "white",
-    fontWeight: "700",
-    fontSize: 16,
-    marginRight: 10,
-  },
-
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 28,
-  },
-
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#E5E5E5",
-  },
-
-  or: {
-    marginHorizontal: 15,
-    color: "#888",
-    fontWeight: "600",
-  },
-
-  googleButton: {
-    height: 58,
-    backgroundColor: "white",
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-  },
-
-  googleText: {
-    marginLeft: 12,
-    fontWeight: "600",
-    fontSize: 15,
-    color: "#111",
-  },
-});

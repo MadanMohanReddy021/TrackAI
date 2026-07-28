@@ -1,26 +1,37 @@
-
-
 import {
     Text,
     View
 } from "react-native";
+import { createStyles } from "../../styles/dashboardStyles";
+import { LightTheme } from "../../theme/colors";
 
-
-import styles from "../../styles/dashboardStyles";
-
-
-
-interface Props{
-
-item:any;
-
+const styles = createStyles(LightTheme);
+interface Props {
+  item:any;
 }
 
 
-
 const FoodLogItem = ({
-item
+  item
 }:Props)=>{
+
+
+const totalCalories =
+item.detected_foods?.reduce(
+  (sum:number, food:any)=>
+    sum + Number(food.kcal || 0),
+  0
+);
+
+
+
+const foodNames =
+item.detected_foods
+?.map(
+  (food:any)=>food.name
+)
+.join(", ");
+
 
 
 return (
@@ -31,9 +42,7 @@ return (
 <View style={styles.foodImage}>
 
 <Text>
-
 🍽️
-
 </Text>
 
 </View>
@@ -45,9 +54,10 @@ return (
 
 <Text style={styles.foodName}>
 
-{item.name}
+{foodNames || "Food"}
 
 </Text>
+
 
 
 <Text style={styles.foodSub}>
@@ -65,14 +75,13 @@ item.meal_type ??
 
 
 
+
 <View>
 
 <Text style={styles.foodCalories}>
 
 {
-Math.round(
-item.calories
-)
+Math.round(totalCalories)
 }
 
 </Text>
@@ -95,7 +104,6 @@ kcal
 
 
 };
-
 
 
 export default FoodLogItem;

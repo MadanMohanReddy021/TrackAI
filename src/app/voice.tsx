@@ -1,8 +1,5 @@
-// import VoiceScreen from "../screens/VoiceScreen";
-// export default function Voice() {
-//   return (
-    
-//       <VoiceScreen />
-    
-//   );
-// }
+import VoiceFoodLoggerScreen from "../screens/VoiceFoodLoggerScreen";
+
+export default function VoicePage() {
+  return <VoiceFoodLoggerScreen />;
+}

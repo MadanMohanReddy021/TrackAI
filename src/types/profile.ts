@@ -1,28 +1,36 @@
 // User Profile
 export interface Profile {
-  id: string;
-  name: string;
-  email: string;
+  userid: string;
+  full_name: string;
+
+  gender: string;
+  age: number;
+
+  height_cm: string;
+  current_weight_kg: string;
+  target_weight_kg: string;
+
+  activity_level: string;
+
+  goal: string;
+  goal_type: string;
+
+  bmr: string;
+  maintenance_calories: string;
+  target_calories: string;
+
+  expected_weekly_change: string;
+
+  target_date?: string | null;
+  referral_source?: string | null;
+
+  protein: string;
+  fat: string;
+  carbs: string;
+  water_ml: string;
 
   created_at: string;
-
-  daily_steps_target: number;
-
-  onboarding_complete: boolean;
-
-  goal?: string;
-
-  target_weight_kg?: number;
-
-  pace_kg_week?: number;
-
-  daily_calorie_target?: number;
-
-  daily_protein_target?: number;
-
-  daily_carbs_target?: number;
-
-  daily_fat_target?: number;
+  updated_at: string;
 }
 
 // Daily Step Log

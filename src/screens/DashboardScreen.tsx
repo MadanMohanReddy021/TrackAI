@@ -1,80 +1,99 @@
 import {
-    useEffect,
-    useMemo,
-    useState,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getHealthData } from "../utils/healthConnect"; // Update the path
-
-import styles from "../styles/dashboardStyles";
-
 import AddMenu from "../components/dashboard/AddMenu";
 import CalorieCard from "../components/dashboard/CalorieCard";
 import FoodLogItem from "../components/dashboard/FoodLogItem";
 import MacroCard from "../components/dashboard/MacroCard";
 import WaterCard from "../components/dashboard/WaterCard";
-
+import { useTheme } from "../context/ThemeContext";
+import { createStyles } from "../styles/dashboardStyles";
+import { DarkTheme, LightTheme } from "../theme/colors";
 
 import {
-    getDashboardData
+  addWaterIntake,
+  getFoodLogs,
+  getNutrients,
+  getProfile,
+  getSteps,
+  getWater
 } from "../services/dashboardApi";
-
-
 
 // ---------------- TYPES ----------------
 
 
 type Profile = {
+  userid: string;
 
-name:string | null;
+  full_name: string;
 
-daily_calorie_target:number | null;
+  gender: string;
 
-daily_protein_target:number | null;
+  age: number;
 
-daily_carbs_target:number | null;
+  height_cm: number | string;
 
-daily_fat_target:number | null;
+  current_weight_kg: number | string;
 
-daily_water_ml:number | null;
+  target_weight_kg: number | string;
 
-daily_steps_target:number | null;
+  activity_level: string;
 
-onboarding_complete:boolean | null;
+  goal: string;
 
+  goal_type: string;
+
+  bmr: number | string;
+
+  maintenance_calories: number | string;
+
+  calories: number | string;
+
+  protein: number | string;
+
+  carbs: number | string;
+
+  fat: number | string;
+
+  water: number | string;
+
+  minimum_steps: number | null;
+
+  target_date: string | null;
+
+  referral_source: string | null;
 };
 
 
-
 type FoodLog = {
-
-id:string;
-
-name:string;
-
-meal_type:string | null;
-
-calories:number;
-
-protein_g:number;
-
-carbs_g:number;
-
-fat_g:number;
-
-image_url:string | null;
-
-logged_at:string;
-
+  analysis_id: number;
+  userid: string;
+  meal_type: string;
+  detected_foods: {
+    name: string;
+    serving: string;
+    quantity?: number;
+    unit?: string;
+    kcal: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+    sugar: number;
+  }[];
+  analyzed_at: string;
 };
 
 
@@ -82,8 +101,40 @@ logged_at:string;
 
 
 const DashboardScreen =()=>{
+//----------------Add water-------------------------------------------------------------------------------------------
+const handleAddWater = async (amount: number) => {
+  try {
+    const userid = await AsyncStorage.getItem("userid");
+
+    if (!userid) {
+      Alert.alert("Error", "User not found");
+      return;
+    }
+
+    const intake_date = new Date().toISOString().split("T")[0];
+
+    await addWaterIntake(userid, intake_date, amount);
+
+    setWater((prev) => prev + amount);
+  } catch (error: any) {
+    Alert.alert(
+      "Error",
+      error.message ?? "Failed to add water"
+    );
+  }
+};
+//----------------------------------------------------------------------------------------------------------------
+//---------------- THEME ----------------
 
 
+const { theme } = useTheme();
+
+const colors =
+  theme === "dark"
+    ? DarkTheme
+    : LightTheme;
+
+const styles = createStyles(colors);
 // ---------------- STATES ----------------
 
 
@@ -91,11 +142,16 @@ const [profile,setProfile] =
 useState<Profile | null>(null);
 
 
-
+const [nutrients, setNutrients] = useState({
+  calories: 0,
+  protein: 0,
+  carbs: 0,
+  fat: 0,
+});
 const [logs,setLogs] =
 useState<FoodLog[]>([]);
 
-
+const [profileName, setProfileName] = useState("");
 
 const [steps,setSteps] =
 useState(0);
@@ -106,28 +162,118 @@ const [water,setWater] =
 useState(0);
 
 
+useEffect(()=>{
 
+  if(profile){
+    setProfileName(profile.full_name);
+  }
+
+},[profile]);
 const [loading,setLoading] =
 useState(true);
+// useEffect(() => {
+//   const loadProfile = async () => {
+//     try {
+//       const storedProfile = await AsyncStorage.getItem("profile");
 
+//       if (storedProfile) {
+//         const profile = JSON.parse(storedProfile);
+
+//         setProfileName(
+//           profile.name || profile.full_name || ""
+//         );
+//       }
+
+//     } catch (error) {
+//       console.log("Profile storage error:", error);
+//     }
+//   };
+
+//   loadProfile();
+
+// }, []);
 
 //---------------- LOAD HEALTH DATA ----------------
+// useEffect(() => {
 
-useEffect(() => {
-    const fetchHealthData = async () => {
-      try {
-        const data = await getHealthData();
+//   const loadSteps = async () => {
 
-        if (data) {
-          setSteps(data.totalSteps);
-        }
-      } catch (error) {
-        console.log("Error fetching health data:", error);
-      }
-    };
+//     const saved = await AsyncStorage.getItem(
+//       "todaySteps"
+//     );
 
-    fetchHealthData();
-  }, []);
+//     if (saved) {
+//       setSteps(Number(saved));
+//     }
+
+//   };
+
+
+//   loadSteps();
+
+// }, []);
+// useEffect(() => {
+
+//   let subscription: any;
+
+
+//   const startPedometer = async () => {
+
+//     const available = await Pedometer.isAvailableAsync();
+
+//     console.log("Pedometer available:", available);
+
+//     if (!available) return;
+
+
+//     subscription = Pedometer.watchStepCount(
+//       async (result) => {
+
+//         console.log("STEP EVENT:", result.steps);
+
+
+//         setSteps(result.steps);
+
+
+//         await AsyncStorage.setItem(
+//           "todaySteps",
+//           String(result.steps)
+//         );
+
+//       }
+//     );
+
+//   };
+
+
+//   startPedometer();
+
+
+//   return () => {
+
+//     if (subscription) {
+//       subscription.remove();
+//     }
+
+//   };
+
+
+// }, []);
+// useEffect(() => {
+
+//   startStepService();
+
+//   const loadSteps = async () => {
+
+//     const steps = await getTodaySteps();
+
+//     setSteps(Number(steps));
+
+//   };
+
+//   loadSteps();
+
+// }, []);
 // ---------------- LOAD DATA ----------------
 
 
@@ -144,67 +290,60 @@ loadDashboard();
 
 
 
-const loadDashboard = async()=>{
+const loadDashboard = async () => {
+  try {
+    setLoading(true);
 
+    const userid = await AsyncStorage.getItem("userid");
 
-try{
+    if (!userid) {
+      Alert.alert("Error", "User ID not found");
+      return;
+    }
 
+    const date = new Date().toISOString().split("T")[0];
 
-setLoading(true);
+    const [
+      profile,
+      nutrients,
+      foodLogs,
+      water,
+      steps,
+    ] = await Promise.all([
+      getProfile(userid),
+      getNutrients(userid, date),
+      getFoodLogs(userid, date),
+      getWater(userid, date),
+      getSteps(userid, date),
+    ]);
 
-
-
-// GET EMAIL
-
-
-const email =
-await AsyncStorage.getItem(
-"userid"
+    
+setProfile(profile.data);
+    setLogs(foodLogs);
+    setWater(water.data.water_ml);
+    setSteps(steps.data.steps);
+    console.log(steps.data.steps);
+    setNutrients(
+  nutrients.data?.[0] ?? {
+    calories:0,
+    protein:0,
+    carbs:0,
+    fat:0,
+    fiber:0,
+    sugar:0
+  }
 );
+   
+    console.log("logs",nutrients);
 
-
-
-if(!email)
-{
-
-Alert.alert(
-"Error",
-"User email not found"
-);
-
-return;
-
-}
-
-
-
-
-
-const data =
-await getDashboardData(
-email
-);
-
-
-
-
-console.log(
-"Dashboard Data",
-data
-);
-
-setProfile(data.profile);
-setLogs(data.foodLogs ?? []);
-setWater(data.water ?? 0);
-}
-catch(error:any){
-Alert.alert("Error",error.message ??"Failed loading dashboard");
-}
-
-finally{
-setLoading(false);
-}
-
+  } catch (error: any) {
+    Alert.alert(
+      "Error",
+      error.message ?? "Failed loading dashboard"
+    );
+  } finally {
+    setLoading(false);
+  }
 };
 
 
@@ -216,97 +355,36 @@ setLoading(false);
 // ---------------- TOTALS ----------------
 
 
-const totals = useMemo(()=>{
-
-
-return logs.reduce(
-(acc,item)=>({
-
-
-cal:
-acc.cal +
-Number(item.calories),
-
-
-protein:
-acc.protein +
-Number(item.protein_g),
-
-
-carbs:
-acc.carbs +
-Number(item.carbs_g),
-
-
-fat:
-acc.fat +
-Number(item.fat_g),
-
-
-}),
-{
-
-
-cal:0,
-
-protein:0,
-
-carbs:0,
-
-fat:0,
-
-}
-
+const totals = useMemo(
+  () => ({
+    cal: Number(nutrients?.calories ?? 0),
+    protein: Number(nutrients?.protein ?? 0),
+    carbs: Number(nutrients?.carbs ?? 0),
+    fat: Number(nutrients?.fat ?? 0),
+  }),
+  [nutrients]
 );
 
 
-},[logs]);
 
-
-
-
-
+ 
 const calorieTarget =
-profile?.daily_calorie_target
-??
-2000;
-
-
-
+  Number(profile?.calories) || 2000;
 
 const proteinTarget =
-profile?.daily_protein_target
-??
-120;
-
-
+  Number(profile?.protein) || 120;
 
 const carbTarget =
-profile?.daily_carbs_target
-??
-220;
-
-
+  Number(profile?.carbs) || 220;
 
 const fatTarget =
-profile?.daily_fat_target
-??
-60;
-
-
+  Number(profile?.fat) || 60;
 
 const waterTarget =
-profile?.daily_water_ml
-??
-3000;
-
-
+  Number(profile?.water) || 3000;
 
 const stepTarget =
-profile?.daily_steps_target
-??
-10000;
-
+  Number(profile?.minimum_steps) || 10000;
 
 
 if(loading)
@@ -362,23 +440,14 @@ Today
 
 
 <Text style={styles.title}>
+  Hello{" "}
 
-Hello{" "}
-
-<Text style={styles.goldText}>
-
-{profile?.name || "there"}
-
-</Text>
+  {profile?.full_name ?? "there"}
 
 </Text>
 
 
 </View>
-
-
-
-
 
 
 {/* CALORIES */}
@@ -526,102 +595,40 @@ target={fatTarget}
 
 
 {/* WATER */}
-
-
 <WaterCard
-
-value={water}
-
-target={waterTarget}
-
-onAdd={(amount)=>{
-
-setWater(
-previous =>
-previous + amount
-);
-
-}}
-
+  value={water}
+  target={waterTarget}
+  onAdd={handleAddWater}
 />
-
-
-
-
-
-
-
 
 {/* FOOD LOG */}
 
-
-
 <View style={styles.sectionHeader}>
-
-
-<Text style={styles.sectionTitle}>
-
-Today's Log
-
-</Text>
-
-
+ <Text style={styles.sectionTitle}>
+  Today's Log
+ </Text>
 </View>
-
-
-
-
 
 {
-logs.length === 0 ?
-
-<View style={styles.emptyCard}>
-
-
-<Text style={styles.emptyText}>
-
-No meals logged yet.
-
-</Text>
-
-
-</View>
-
-
-:
-
-
-logs.map(item=>(
-
-
-<FoodLogItem
-
-key={item.id}
-
-item={item}
-
-
-/>
-
-
-))
-
+  logs.length === 0 ? (
+    <View style={styles.emptyCard}>
+      <Text style={styles.emptyText}>
+        No meals logged yet.
+      </Text>
+    </View>
+  ) : (
+    logs.map((item) => (
+      <FoodLogItem
+        key={item.analysis_id}
+        item={item}
+      />
+    ))
+  )
 }
-
-
-
-
 
 </ScrollView>
 
-
-
-
-
-
 {/* FLOATING ADD BUTTON */}
-
-
 
 <AddMenu />
 

@@ -1,8 +1,8 @@
 import axios from "axios";
 
-const api = axios.create({
+const apis = axios.create({
 
-    baseURL: "https://YOUR_BACKEND_URL/api",
+    baseURL: "http://172.22.204.25:3000",
 
     timeout: 30000,
 
@@ -14,4 +14,4 @@ const api = axios.create({
 
 });
 
-export default api;
+export default apis;

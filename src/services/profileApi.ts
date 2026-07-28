@@ -1,29 +1,76 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import apis from "./apis";
 
-export const profileApi = {
+const getUserId = async () => {
+  return await AsyncStorage.getItem("userid");
+};
+
+
+export const profileApi = { 
+
   // Profile
   async getProfile() {
-    const response = await apis.get("/profile");
+
+    const userid = await getUserId();
+
+    const response = await apis.get("/get-profile", {
+      params: {
+        userid,
+      },
+    });
     return response.data;
   },
+
 
   // Step Logs
   async getStepLogs(days = 30) {
-    const response = await apis.get(`/steps?days=${days}`);
+
+    const userid = await getUserId();
+
+    const response = await apis.get("/get-steps", {
+      params: {
+        days,
+        userid,
+      },
+    });
+
     return response.data;
   },
+
 
   // Food Logs
   async getFoodLogs(days = 30) {
-    const response = await apis.get(`/food-logs?days=${days}`);
+
+    const userid = await getUserId();
+
+    const response = await apis.get("/food-logs", {
+      params: {
+        days,
+        userid,
+      },
+    });
+
     return response.data;
   },
 
+
   // Previous Health Score
   async getHealthScoreHistory() {
-    const response = await apis.get("/health-score/history");
+
+    const userid = await getUserId();
+
+    const response = await apis.get(
+      "/health-score/history",
+      {
+        params: {
+          userid,
+        },
+      }
+    );
+
     return response.data;
   },
+
 
   // Save Monthly Snapshot
   async saveHealthScore(payload: {
@@ -32,19 +79,52 @@ export const profileApi = {
     consistency_component: number;
     food_component: number;
   }) {
-    const response = await apis.post("/health-score", payload);
+
+    const userid = await getUserId();
+
+    const response = await apis.post(
+      "/health-score",
+      {
+        userid,
+        ...payload,
+      }
+    );
+
     return response.data;
   },
+
 
   // Reset onboarding
   async resetOnboarding() {
-    const response = await apis.put("/profile/reset-onboarding");
+
+    const userid = await getUserId();
+
+    const response = await apis.put(
+      "/profile/reset-onboarding",
+      {
+        userid,
+      }
+    );
+
     return response.data;
   },
 
+
   // Delete account
   async deleteAccount() {
-    const response = await apis.delete("/user");
+
+    const userid = await getUserId();
+
+    const response = await apis.delete(
+      "/user",
+      {
+        data: {
+          userid,
+        },
+      }
+    );
+
     return response.data;
   },
+
 };

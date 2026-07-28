@@ -1,10 +1,13 @@
 import { StyleSheet } from "react-native";
 
-export const styles = StyleSheet.create({
+export const createStyles = (colors: any) =>
+  StyleSheet.create({
+
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
   },
+
 
   content: {
     flexGrow: 1,
@@ -12,36 +15,42 @@ export const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
+
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 20,
 
-    shadowColor: "#000",
+    shadowColor: colors.shadow || "#000000",
+
     shadowOffset: {
       width: 0,
       height: 2,
     },
+
     shadowOpacity: 0.08,
     shadowRadius: 8,
 
     elevation: 3,
   },
 
+
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#111827",
+    color: colors.text,
     textAlign: "center",
   },
+
 
   subtitle: {
     marginTop: 8,
     fontSize: 15,
-    color: "#6B7280",
+    color: colors.secondaryText,
     textAlign: "center",
     lineHeight: 22,
   },
+
 
   micContainer: {
     marginTop: 36,
@@ -49,96 +58,110 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+
   micButton: {
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: "#10B981",
+    backgroundColor: colors.button,
     justifyContent: "center",
     alignItems: "center",
 
-    shadowColor: "#10B981",
+    shadowColor: colors.button,
+
     shadowOffset: {
       width: 0,
       height: 6,
     },
+
     shadowOpacity: 0.35,
     shadowRadius: 12,
 
     elevation: 8,
   },
 
+
   micButtonListening: {
     backgroundColor: "#EF4444",
   },
+
 
   status: {
     marginTop: 18,
     fontSize: 15,
     textAlign: "center",
-    color: "#6B7280",
+    color: colors.secondaryText,
     fontWeight: "600",
   },
 
+
   transcriptCard: {
     marginTop: 28,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
     minHeight: 180,
     padding: 16,
   },
 
+
   transcriptInput: {
     fontSize: 16,
-    color: "#111827",
+    color: colors.text,
     lineHeight: 26,
     textAlignVertical: "top",
     minHeight: 150,
   },
 
+
   button: {
     marginTop: 24,
-    backgroundColor: "#10B981",
+    backgroundColor: colors.button,
     height: 54,
     borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },
 
+
   buttonDisabled: {
     opacity: 0.6,
   },
 
+
   buttonText: {
-    color: "#FFFFFF",
+    color: colors.buttonText,
     fontWeight: "700",
     fontSize: 16,
   },
+
 
   secondaryButton: {
     marginTop: 14,
     height: 54,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#10B981",
+    borderColor: colors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
 
+
   secondaryButtonText: {
-    color: "#10B981",
+    color: colors.primary,
     fontWeight: "700",
     fontSize: 16,
   },
+
 
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
   },
+
 
   errorText: {
     color: "#EF4444",
@@ -146,4 +169,5 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 20,
   },
+
 });

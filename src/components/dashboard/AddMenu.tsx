@@ -1,27 +1,82 @@
 import { router } from "expo-router";
-import { Camera, Mic } from "lucide-react-native";
+import { Camera, Mic, Plus, Type } from "lucide-react-native";
+import { useState } from "react";
 import { TouchableOpacity, View } from "react-native";
 
-import styles from "../../styles/dashboardStyles";
+import { useTheme } from "../../context/ThemeContext";
+import { createStyles } from "../../styles/dashboardStyles";
+import { DarkTheme, LightTheme } from "../../theme/colors";
 
-const AddMenu = () => {
+export default function AddMenu() {
+  const [open, setOpen] = useState(false);
+const { theme } = useTheme();
+
+const colors =
+  theme === "dark"
+    ? DarkTheme
+    : LightTheme;
+
+const styles = createStyles(colors);
   return (
     <View style={styles.fabContainer}>
+
+      {/* Camera */}
+      {open && (
+        <TouchableOpacity
+          style={[styles.optionButton, { bottom: 120, right: 35 }]}
+          onPress={() => {
+            setOpen(false);
+            router.push("/foodscan");
+          }}
+        >
+          <Camera size={22} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {/* Voice */}
+      {open && (
+        <TouchableOpacity
+          style={[styles.optionButton, { bottom: 90, right: 100 }]}
+          onPress={() => {
+            setOpen(false);
+            router.push("/voice");
+          }}
+        >
+          <Mic size={22} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {/* Text */}
+      {open && (
+        <TouchableOpacity
+          style={[styles.optionButton, { bottom: 30, right: 120 }]}
+          onPress={() => {
+            setOpen(false);
+            router.push("/textfood");
+          }}
+        >
+          <Type size={22} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {/* Main FAB */}
       <TouchableOpacity
-        style={styles.fabButton}
-        onPress={() => router.push("/scan")}
+        style={styles.mainFab}
+        onPress={() => setOpen(!open)}
       >
-        <Camera size={24} color="#fff" />
+        <Plus
+          size={30}
+          color="#fff"
+          style={{
+            transform: [
+              {
+                rotate: open ? "0deg" : "0deg",
+              },
+            ],
+          }}
+        />
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.fabButton, { marginTop: 12 }]}
-        onPress={() => router.push("/voice")}
-      >
-        <Mic size={24} color="#fff" />
-      </TouchableOpacity>
     </View>
   );
-};
-
-export default AddMenu;
+}

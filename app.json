@@ -24,7 +24,11 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.WRITE_STEPS",
+        "android.permission.ACTIVITY_RECOGNITION"
       ],
       "package": "com.anonymous.TrackAI"
     },
@@ -34,6 +38,13 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow TrackAI to use your microphone.",
+          "speechRecognitionPermission": "Allow TrackAI to recognize your speech."
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -51,14 +62,18 @@
       "expo-image",
       "expo-status-bar",
       "expo-web-browser",
+      "expo-health-connect",
       [
-        "expo-speech-recognition",
+        "expo-build-properties",
         {
-          "microphonePermission": "Allow TrackAI to use your microphone.",
-          "speechRecognitionPermission": "Allow TrackAI to recognize your speech."
+          "android": {
+            "minSdkVersion": 26,
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36
+          }
         }
       ],
-      "expo-health-connect"
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true,

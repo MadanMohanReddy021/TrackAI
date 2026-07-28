@@ -1,9 +1,12 @@
 import React from "react";
 import { Text, View } from "react-native";
 
+import { useTheme } from "@/context/ThemeContext";
 import { Goal, GOALS } from "../../constants/onboarding";
-import styles from "../../styles/onboardingStyles";
+import { createStyles } from "../../styles/onboardingStyles";
+
 import ChoiceCard from "./ChoiceCard";
+
 
 interface Step2Props {
   goal?: Goal;
@@ -11,11 +14,18 @@ interface Step2Props {
   setPace: (pace?: number) => void;
 }
 
+
 const Step2: React.FC<Step2Props> = ({
   goal,
   setGoal,
   setPace,
 }) => {
+
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
+
+
   return (
     <View>
 
@@ -23,11 +33,14 @@ const Step2: React.FC<Step2Props> = ({
         What is your goal?
       </Text>
 
+
       <Text style={styles.subHeading}>
         Choose the result you want to achieve.
       </Text>
 
+
       {GOALS.map((item) => (
+
         <ChoiceCard
           key={item.value}
           title={item.title}
@@ -38,10 +51,13 @@ const Step2: React.FC<Step2Props> = ({
             setPace(undefined);
           }}
         />
+
       ))}
+
 
     </View>
   );
 };
+
 
 export default Step2;

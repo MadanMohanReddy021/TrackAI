@@ -1,11 +1,13 @@
 import React from "react";
 import {
-    Text,
-    TouchableOpacity,
-    View,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-import styles from "../../styles/onboardingStyles";
+import { useTheme } from "@/context/ThemeContext";
+import { createStyles } from "../../styles/onboardingStyles";
+
 
 interface Step6Props {
   summary: any;
@@ -13,12 +15,20 @@ interface Step6Props {
   onFinish: () => void;
 }
 
+
 const Step6: React.FC<Step6Props> = ({
   summary,
   goal,
   onFinish,
 }) => {
+
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
+
+
   if (!summary) return null;
+
 
   return (
     <View>
@@ -27,17 +37,22 @@ const Step6: React.FC<Step6Props> = ({
         🎉 Your Plan is Ready
       </Text>
 
+
       <Text style={styles.subHeading}>
         Your personalized nutrition plan has been generated.
       </Text>
 
+
       <View style={styles.card}>
+
 
         <Text style={styles.summaryTitle}>
           Nutrition Summary
         </Text>
 
+
         <View style={styles.summaryRow}>
+
           <Text style={styles.summaryLabel}>
             Goal
           </Text>
@@ -45,71 +60,94 @@ const Step6: React.FC<Step6Props> = ({
           <Text style={styles.summaryValue}>
             {goal?.replace("_", " ").toUpperCase()}
           </Text>
+
         </View>
 
+
         <View style={styles.summaryRow}>
+
           <Text style={styles.summaryLabel}>
             Daily Calories
           </Text>
 
           <Text style={styles.summaryValue}>
-            {summary.daily_calorie_target} kcal
+            {summary.data?.targetCalories} kcal
           </Text>
+
         </View>
 
+
         <View style={styles.summaryRow}>
+
           <Text style={styles.summaryLabel}>
             Protein
           </Text>
 
           <Text style={styles.summaryValue}>
-            {summary.daily_protein_target} g
+            {summary.data?.protein} g
           </Text>
+
         </View>
 
+
         <View style={styles.summaryRow}>
+
           <Text style={styles.summaryLabel}>
             Carbs
           </Text>
 
           <Text style={styles.summaryValue}>
-            {summary.daily_carbs_target} g
+            {summary.data?.carbs} g
           </Text>
+
         </View>
 
+
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>
+
+          <Text style={styles.summaryLabel}
+          >
             Fat
           </Text>
 
           <Text style={styles.summaryValue}>
-            {summary.daily_fat_target} g
+            {summary.data?.fat} g
           </Text>
+
         </View>
 
+
         <View style={styles.summaryRow}>
+
           <Text style={styles.summaryLabel}>
             Water
           </Text>
 
           <Text style={styles.summaryValue}>
-            {summary.daily_water_ml} ml
+            {summary.data?.water} ml
           </Text>
+
         </View>
 
+
       </View>
+
 
       <TouchableOpacity
         style={styles.button}
         onPress={onFinish}
       >
+
         <Text style={styles.buttonText}>
           Open Dashboard
         </Text>
+
       </TouchableOpacity>
+
 
     </View>
   );
 };
+
 
 export default Step6;

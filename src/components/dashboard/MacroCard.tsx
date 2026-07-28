@@ -4,7 +4,9 @@ import {
     View
 } from "react-native";
 
-import styles from "../../styles/dashboardStyles";
+import { useTheme } from "../../context/ThemeContext";
+import { createStyles } from "../../styles/dashboardStyles";
+import { DarkTheme, LightTheme } from "../../theme/colors";
 
 
 interface Props{
@@ -32,6 +34,14 @@ Math.min(
 (value/target)*100
 );
 
+const { theme } = useTheme();
+
+const colors =
+  theme === "dark"
+    ? DarkTheme
+    : LightTheme;
+
+const styles = createStyles(colors);
 
 
 return (

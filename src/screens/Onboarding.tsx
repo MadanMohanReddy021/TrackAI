@@ -1,15 +1,14 @@
+import { useTheme } from "@/context/ThemeContext";
+import BASE_URL from "@/storage/ipAdress";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { useState } from "react";
-
 import {
   Alert,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-import styles from "../styles/onboardingStyles";
 
 import ProgressBar from "../components/onboarding/ProgressBar";
 import Step0 from "../components/onboarding/Step0";
@@ -19,6 +18,7 @@ import Step3 from "../components/onboarding/Step3";
 import Step4 from "../components/onboarding/Step4";
 import Step5 from "../components/onboarding/Step5";
 import Step6 from "../components/onboarding/Step6";
+import { createStyles } from "../styles/onboardingStyles";
 
 import {
   Activity,
@@ -33,6 +33,10 @@ import {
 
 const OnboardingScreen = () => {
 
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
+  console.log("ONBOARDING COLORS:", colors);
 
 const TOTAL_STEPS = 7;
 
@@ -223,7 +227,7 @@ const profile = {
 console.log("4. PROFILE:", profile);
 
 const apiResponse = await fetch(
-  "http://172.22.204.4:3000/profile",
+  `${BASE_URL}/profile`,
   {
     method: "POST",
     headers: {
@@ -263,12 +267,7 @@ console.log("8. PARSED RESPONSE:", response);
 setSummary(response);
 setStep(6);
 
-
-
-console.log(
-"5. RESPONSE",
-response
-);
+;
 
 
 
@@ -334,7 +333,6 @@ if(step === 5)
   return;
 }
 
-
 setStep(
 previous=>previous+1
 );
@@ -349,19 +347,12 @@ previous=>previous+1
 // ---------------- BACK BUTTON ----------------
 
 
-const back = ()=>{
-
-
-if(step > 1)
-{
-
-setStep(
-previous=>previous-1
-);
-
-}
-
-
+const back = () => {
+  if (step === 0) {
+    router.back();
+  } else {
+    setStep(previous => previous - 1);
+  }
 };
 return (
 
@@ -376,7 +367,6 @@ return (
 <TouchableOpacity
 style={styles.backButton}
 onPress={back}
-disabled={step === 1}
 >
 
 <Text style={styles.backText}>
@@ -512,35 +502,12 @@ disabled={loading}
 
 
 <Text style={styles.buttonText}>
-
 {
-
-loading
-
-?
-
-"Generating Plan..."
-
-:
-
-step === 5
-
-?
-
-"Finish & Generate"
-
-:
-
-"Continue"
-
+loading?"Generating Plan...":step === 5?"Finish & Generate":"Continue"
 }
-
-
 </Text>
 
-
 </TouchableOpacity>
-
 
 }
 
