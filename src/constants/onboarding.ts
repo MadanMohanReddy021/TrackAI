@@ -1,15 +1,8 @@
 // src/constants/onboarding.ts
 
-export type Goal =
-  | "weight_loss"
-  | "weight_gain"
-  | "muscle_gain"
-  | "strength";
+export type Goal = "weight_loss" | "weight_gain" | "muscle_gain" | "strength";
 
-export type Gender =
-  | "male"
-  | "female"
-  | "other";
+export type Gender = "male" | "female" | "other";
 
 export type Activity =
   | "sedentary"
@@ -28,47 +21,67 @@ export const PACE_OPTIONS: Record<Goal, PaceOption[]> = {
   loss: [
     {
       value: 0.25,
-      title: "Mild Loss",
-      description: "−250 kcal/day • ~0.25 kg/week",
+      title: "Slow & Sustainable",
+      description: "−250 kcal/day • ~0.25 kg/week • Easier to maintain",
     },
     {
       value: 0.5,
-      title: "Moderate Loss",
-      description: "−500 kcal/day • ~0.5 kg/week",
+      title: "Balanced Loss",
+      description: "−500 kcal/day • ~0.5 kg/week • Recommended",
+    },
+    {
+      value: 0.75,
+      title: "Active Loss",
+      description: "−750 kcal/day • ~0.75 kg/week • Requires consistency",
+    },
+    {
+      value: 1,
+      title: "Fast Loss",
+      description: "−1000 kcal/day • ~1 kg/week • Advanced",
     },
   ],
 
   gain: [
     {
+      value: 0.1,
+      title: "Lean Gain",
+      description: "+100 kcal/day • ~0.1 kg/week • Minimal fat gain",
+    },
+    {
       value: 0.25,
       title: "Slow Gain",
-      description: "+250 kcal/day • ~0.25 kg/week",
+      description: "+250 kcal/day • ~0.25 kg/week • Recommended",
     },
     {
       value: 0.5,
       title: "Moderate Gain",
-      description: "+500 kcal/day • ~0.5 kg/week",
+      description: "+500 kcal/day • ~0.5 kg/week • Faster progress",
     },
   ],
 
   muscle_gain: [
     {
+      value: 0.1,
+      title: "Lean Muscle",
+      description: "+100 kcal/day • ~0.1 kg/week • Focus on quality",
+    },
+    {
       value: 0.25,
-      title: "Lean Bulk",
-      description: "+250 kcal/day • ~0.25 kg/week",
+      title: "Controlled Bulk",
+      description: "+250 kcal/day • ~0.25 kg/week • Recommended",
     },
     {
       value: 0.5,
-      title: "Moderate Bulk",
-      description: "+500 kcal/day • ~0.5 kg/week",
+      title: "Aggressive Bulk",
+      description: "+500 kcal/day • ~0.5 kg/week • More calorie surplus",
     },
   ],
 
   maintain: [
     {
       value: 0,
-      title: "Maintenance",
-      description: "Maintain current weight",
+      title: "Maintain Weight",
+      description: "Calories matched to activity • Keep current weight",
     },
   ],
 };
@@ -79,7 +92,7 @@ export const GOALS = [
     title: "Weight Loss",
     description: "Sustainable fat loss with a calorie deficit.",
   },
-   {
+  {
     value: "maintain" as Goal,
     title: "Maintenance",
     description: "Maintain current weight.",
@@ -89,8 +102,6 @@ export const GOALS = [
     title: " Weight Gain",
     description: "Healthy calorie surplus for weight gain.",
   },
- 
-  
 ];
 
 export const ACTIVITY_LEVELS = [

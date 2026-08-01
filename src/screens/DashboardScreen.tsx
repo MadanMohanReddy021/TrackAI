@@ -1,23 +1,20 @@
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
-
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { readRecords } from "react-native-health-connect";
 import AddMenu from "../components/dashboard/AddMenu";
 import CalorieCard from "../components/dashboard/CalorieCard";
 import FoodLogItem from "../components/dashboard/FoodLogItem";
 import MacroCard from "../components/dashboard/MacroCard";
-import WaterCard from "../components/dashboard/WaterCard";
 import { useTheme } from "../context/ThemeContext";
 import { createStyles } from "../styles/dashboardStyles";
 import { DarkTheme, LightTheme } from "../theme/colors";
@@ -28,11 +25,10 @@ import {
   getNutrients,
   getProfile,
   getSteps,
-  getWater
+  getWater,
 } from "../services/dashboardApi";
 
 // ---------------- TYPES ----------------
-
 
 type Profile = {
   userid: string;
@@ -76,7 +72,6 @@ type Profile = {
   referral_source: string | null;
 };
 
-
 type FoodLog = {
   analysis_id: number;
   userid: string;
@@ -96,548 +91,501 @@ type FoodLog = {
   analyzed_at: string;
 };
 
+const DashboardScreen = () => {
+  //----------------Add water-------------------------------------------------------------------------------------------
+  const handleAddWater = async (amount: number) => {
+    try {
+      const userid = await AsyncStorage.getItem("userid");
 
+      if (!userid) {
+        Alert.alert("Error", "User not found");
+        return;
+      }
 
+      const intake_date = new Date().toISOString().split("T")[0];
 
+      await addWaterIntake(userid, intake_date, amount);
 
-const DashboardScreen =()=>{
-//----------------Add water-------------------------------------------------------------------------------------------
-const handleAddWater = async (amount: number) => {
-  try {
-    const userid = await AsyncStorage.getItem("userid");
-
-    if (!userid) {
-      Alert.alert("Error", "User not found");
-      return;
+      setWater((prev) => prev + amount);
+    } catch (error: any) {
+      Alert.alert("Error", error.message ?? "Failed to add water");
     }
+  };
+  //----------------------------------------------------------------------------------------------------------------
+  //---------------- THEME ----------------
 
-    const intake_date = new Date().toISOString().split("T")[0];
+  const { theme } = useTheme();
 
-    await addWaterIntake(userid, intake_date, amount);
+  const colors = theme === "dark" ? DarkTheme : LightTheme;
 
-    setWater((prev) => prev + amount);
-  } catch (error: any) {
-    Alert.alert(
-      "Error",
-      error.message ?? "Failed to add water"
+  const styles = createStyles(colors);
+  // ---------------- STATES ----------------
+
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  const [nutrients, setNutrients] = useState({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    sugar: 0,
+    fiber: 0,
+  });
+  const [logs, setLogs] = useState<FoodLog[]>([]);
+
+  const [profileName, setProfileName] = useState("");
+
+  const [steps, setSteps] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [water, setWater] = useState(0);
+
+  const today = new Date();
+
+  const dates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - i));
+
+    const formatted = d.toISOString().split("T")[0];
+
+    return {
+      day: d.toLocaleDateString("en-US", { weekday: "short" }),
+      date: d.getDate(),
+      fullDate: formatted,
+    };
+  });
+  useEffect(() => {
+    if (profile) {
+      setProfileName(profile.full_name);
+    }
+  }, [profile]);
+  const [loading, setLoading] = useState(true);
+  // useEffect(() => {
+  //   const loadProfile = async () => {
+  //     try {
+  //       const storedProfile = await AsyncStorage.getItem("profile");
+
+  //       if (storedProfile) {
+  //         const profile = JSON.parse(storedProfile);
+
+  //         setProfileName(
+  //           profile.name || profile.full_name || ""
+  //         );
+  //       }
+
+  //     } catch (error) {
+  //       console.log("Profile storage error:", error);
+  //     }
+  //   };
+
+  //   loadProfile();
+
+  // }, []);
+
+  //---------------- LOAD HEALTH DATA ----------------
+  // useEffect(() => {
+
+  //   const loadSteps = async () => {
+
+  //     const saved = await AsyncStorage.getItem(
+  //       "todaySteps"
+  //     );
+
+  //     if (saved) {
+  //       setSteps(Number(saved));
+  //     }
+
+  //   };
+
+  //   loadSteps();
+
+  // }, []);
+  // useEffect(() => {
+
+  //   let subscription: any;
+
+  //   const startPedometer = async () => {
+
+  //     const available = await Pedometer.isAvailableAsync();
+
+  //     console.log("Pedometer available:", available);
+
+  //     if (!available) return;
+
+  //     subscription = Pedometer.watchStepCount(
+  //       async (result) => {
+
+  //         console.log("STEP EVENT:", result.steps);
+
+  //         setSteps(result.steps);
+
+  //         await AsyncStorage.setItem(
+  //           "todaySteps",
+  //           String(result.steps)
+  //         );
+
+  //       }
+  //     );
+
+  //   };
+
+  //   startPedometer();
+
+  //   return () => {
+
+  //     if (subscription) {
+  //       subscription.remove();
+  //     }
+
+  //   };
+
+  // }, []);
+  // useEffect(() => {
+
+  //   startStepService();
+
+  //   const loadSteps = async () => {
+
+  //     const steps = await getTodaySteps();
+
+  //     setSteps(Number(steps));
+
+  //   };
+
+  //   loadSteps();
+
+  // }, []);
+  // ---------------- LOAD DATA ----------------
+  //----------------------------------------------- getting steps from the health connect--------------------------------------------------------------
+  useEffect(() => {
+    const loadTodaySteps = async () => {
+      try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date();
+
+        const result = await readRecords("Steps", {
+          timeRangeFilter: {
+            operator: "between",
+            startTime: startOfDay.toISOString(),
+            endTime: endOfDay.toISOString(),
+          },
+        });
+
+        let totalSteps = 0;
+
+        result.records.forEach((record) => {
+          totalSteps += record.count;
+        });
+
+        console.log("Today's steps:", totalSteps);
+
+        setSteps(totalSteps);
+      } catch (error) {
+        console.log("Error loading steps:", error);
+      }
+    };
+
+    loadTodaySteps();
+  }, []);
+  //----------------------------------------------- getting steps from the health connect--------------------------------------------------------------
+
+  useEffect(() => {
+    loadDashboard(selectedDate);
+  }, [selectedDate]);
+
+  const loadDashboard = async (date: string) => {
+    try {
+      setLoading(true);
+
+      const userid = await AsyncStorage.getItem("userid");
+
+      if (!userid) {
+        Alert.alert("Error", "User ID not found");
+        return;
+      }
+      const nutrientsResponse = await getNutrients(userid, date);
+      console.log("Nutrients Response:", nutrientsResponse);
+      const [profile, foodLogs, water, steps] = await Promise.all([
+        getProfile(userid),
+        getFoodLogs(userid, date),
+        getWater(userid, date),
+        getSteps(userid, date),
+      ]);
+
+      setProfile(profile.data);
+      setLogs(foodLogs);
+      setWater(water);
+      setSteps(steps);
+
+      try {
+        const item = nutrientsResponse.data[0];
+
+        console.log("Item:", item);
+
+        setNutrients({
+          calories: Number(item.calories),
+          protein: Number(item.protein),
+          carbs: Number(item.carbs),
+          fat: Number(item.fat),
+          fiber: Number(item.fiber),
+          sugar: Number(item.sugar),
+        });
+      } catch (e) {
+        console.error("Error reading nutrients:", e);
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message ?? "Failed loading dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------- TOTALS ----------------
+
+  const totals = useMemo(
+    () => ({
+      cal: Number(nutrients?.calories ?? 0),
+      protein: Number(nutrients?.protein ?? 0),
+      carbs: Number(nutrients?.carbs ?? 0),
+      fat: Number(nutrients?.fat ?? 0),
+      sugar: Number(nutrients?.sugar ?? 0),
+      fiber: Number(nutrients?.fiber ?? 0),
+    }),
+    [nutrients],
+  );
+
+  const calorieTarget = Number(profile?.calories) || 2000;
+
+  const proteinTarget = Number(profile?.protein) || 120;
+  const [activeDot, setActiveDot] = useState(0);
+  const carbTarget = Number(profile?.carbs) || 220;
+
+  const fatTarget = Number(profile?.fat) || 60;
+
+  const waterTarget = Number(profile?.water) || 3000;
+
+  const stepTarget = Number(profile?.minimum_steps) || 10000;
+  const fiberTarget = Number(profile?.fiber) || 35;
+
+  const sugarTarget = Number(profile?.sugar) || 30;
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#2c2413" />
+
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
     );
   }
-};
-//----------------------------------------------------------------------------------------------------------------
-//---------------- THEME ----------------
-
-
-const { theme } = useTheme();
-
-const colors =
-  theme === "dark"
-    ? DarkTheme
-    : LightTheme;
-
-const styles = createStyles(colors);
-// ---------------- STATES ----------------
-
-
-const [profile,setProfile] =
-useState<Profile | null>(null);
-
-
-const [nutrients, setNutrients] = useState({
-  calories: 0,
-  protein: 0,
-  carbs: 0,
-  fat: 0,
-});
-const [logs,setLogs] =
-useState<FoodLog[]>([]);
-
-const [profileName, setProfileName] = useState("");
-
-const [steps,setSteps] =
-useState(0);
-
-
-
-const [water,setWater] =
-useState(0);
-
-
-useEffect(()=>{
-
-  if(profile){
-    setProfileName(profile.full_name);
-  }
-
-},[profile]);
-const [loading,setLoading] =
-useState(true);
-// useEffect(() => {
-//   const loadProfile = async () => {
-//     try {
-//       const storedProfile = await AsyncStorage.getItem("profile");
-
-//       if (storedProfile) {
-//         const profile = JSON.parse(storedProfile);
-
-//         setProfileName(
-//           profile.name || profile.full_name || ""
-//         );
-//       }
-
-//     } catch (error) {
-//       console.log("Profile storage error:", error);
-//     }
-//   };
-
-//   loadProfile();
-
-// }, []);
-
-//---------------- LOAD HEALTH DATA ----------------
-// useEffect(() => {
-
-//   const loadSteps = async () => {
-
-//     const saved = await AsyncStorage.getItem(
-//       "todaySteps"
-//     );
-
-//     if (saved) {
-//       setSteps(Number(saved));
-//     }
-
-//   };
-
-
-//   loadSteps();
-
-// }, []);
-// useEffect(() => {
-
-//   let subscription: any;
-
-
-//   const startPedometer = async () => {
-
-//     const available = await Pedometer.isAvailableAsync();
-
-//     console.log("Pedometer available:", available);
-
-//     if (!available) return;
-
-
-//     subscription = Pedometer.watchStepCount(
-//       async (result) => {
-
-//         console.log("STEP EVENT:", result.steps);
-
-
-//         setSteps(result.steps);
-
-
-//         await AsyncStorage.setItem(
-//           "todaySteps",
-//           String(result.steps)
-//         );
-
-//       }
-//     );
-
-//   };
-
-
-//   startPedometer();
-
-
-//   return () => {
-
-//     if (subscription) {
-//       subscription.remove();
-//     }
-
-//   };
-
-
-// }, []);
-// useEffect(() => {
-
-//   startStepService();
-
-//   const loadSteps = async () => {
-
-//     const steps = await getTodaySteps();
-
-//     setSteps(Number(steps));
-
-//   };
-
-//   loadSteps();
-
-// }, []);
-// ---------------- LOAD DATA ----------------
-
-
-useEffect(()=>{
-
-
-loadDashboard();
-
-
-},[]);
-
-
-
-
-
-
-const loadDashboard = async () => {
-  try {
-    setLoading(true);
-
-    const userid = await AsyncStorage.getItem("userid");
-
-    if (!userid) {
-      Alert.alert("Error", "User ID not found");
-      return;
-    }
-
-    const date = new Date().toISOString().split("T")[0];
-
-    const [
-      profile,
-      nutrients,
-      foodLogs,
-      water,
-      steps,
-    ] = await Promise.all([
-      getProfile(userid),
-      getNutrients(userid, date),
-      getFoodLogs(userid, date),
-      getWater(userid, date),
-      getSteps(userid, date),
-    ]);
-
-    
-setProfile(profile.data);
-    setLogs(foodLogs);
-    setWater(water.data.water_ml);
-    setSteps(steps.data.steps);
-    console.log(steps.data.steps);
-    setNutrients(
-  nutrients.data?.[0] ?? {
-    calories:0,
-    protein:0,
-    carbs:0,
-    fat:0,
-    fiber:0,
-    sugar:0
-  }
-);
-   
-    console.log("logs",nutrients);
-
-  } catch (error: any) {
-    Alert.alert(
-      "Error",
-      error.message ?? "Failed loading dashboard"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
-
-
-
-
-// ---------------- TOTALS ----------------
-
-
-const totals = useMemo(
-  () => ({
-    cal: Number(nutrients?.calories ?? 0),
-    protein: Number(nutrients?.protein ?? 0),
-    carbs: Number(nutrients?.carbs ?? 0),
-    fat: Number(nutrients?.fat ?? 0),
-  }),
-  [nutrients]
-);
-
-
-
- 
-const calorieTarget =
-  Number(profile?.calories) || 2000;
-
-const proteinTarget =
-  Number(profile?.protein) || 120;
-
-const carbTarget =
-  Number(profile?.carbs) || 220;
-
-const fatTarget =
-  Number(profile?.fat) || 60;
-
-const waterTarget =
-  Number(profile?.water) || 3000;
-
-const stepTarget =
-  Number(profile?.minimum_steps) || 10000;
-
-
-if(loading)
-{
-
-return (
-
-<View style={styles.loader}>
-
-<ActivityIndicator
-size="large"
-color="#C9A24B"
-/>
-
-
-<Text style={styles.loadingText}>
-Loading...
-</Text>
-
-
-</View>
-
-);
-
-}
-return (
-
-<View style={styles.container}>
-
-
-<ScrollView
-
-showsVerticalScrollIndicator={false}
-
-contentContainerStyle={{
-paddingBottom:120
-}}
-
->
-
-
-
-{/* HEADER */}
-
-<View style={styles.header}>
-
-
-<Text style={styles.dayText}>
-
-Today
-
-</Text>
-
-
-<Text style={styles.title}>
-  Hello{" "}
-
-  {profile?.full_name ?? "there"}
-
-</Text>
-
-
-</View>
-
-
-{/* CALORIES */}
-
-
-<CalorieCard
-
-consumed={Math.round(totals.cal)}
-
-target={calorieTarget}
-
-/>
-
-
-
-
-
-
-{/* STEPS */}
-
-
-<View style={styles.card}>
-
-
-<Text style={styles.cardTitle}>
-
-🚶 Steps
-
-</Text>
-
-
-<Text style={styles.bigNumber}>
-
-{steps.toLocaleString()}
-
-<Text style={styles.smallText}>
-
- / {stepTarget.toLocaleString()}
-
-</Text>
-
-</Text>
-
-
-
-<View style={styles.progressBackground}>
-
-
-<View
-
-style={[
-styles.progressFill,
-
-{
-
-width:
-`${Math.min(
-100,
-(steps / stepTarget)*100
-)}%`
-
-}
-
-]}
-
-
-/>
-
-
-</View>
-
-
-<Text style={styles.leftText}>
-
-{
-Math.max(
-0,
-stepTarget-steps
-).toLocaleString()
-}
-
- steps left
-
-</Text>
-
-
-</View>
-
-
-
-
-
-
-
-
-{/* MACROS */}
-
-
-<View style={styles.macroContainer}>
-
-
-<MacroCard
-
-title="Protein"
-
-value={totals.protein}
-
-target={proteinTarget}
-
-/>
-
-
-
-<MacroCard
-
-title="Carbs"
-
-value={totals.carbs}
-
-target={carbTarget}
-
-/>
-
-
-
-<MacroCard
-
-title="Fat"
-
-value={totals.fat}
-
-target={fatTarget}
-
-/>
-
-
-
-</View>
-
-
-
-
-
-
-
-
-{/* WATER */}
-<WaterCard
-  value={water}
-  target={waterTarget}
-  onAdd={handleAddWater}
-/>
-
-{/* FOOD LOG */}
-
-<View style={styles.sectionHeader}>
- <Text style={styles.sectionTitle}>
-  Today's Log
- </Text>
-</View>
-
-{
-  logs.length === 0 ? (
-    <View style={styles.emptyCard}>
-      <Text style={styles.emptyText}>
-        No meals logged yet.
-      </Text>
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>TrackAI</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 120,
+        }}
+      >
+        {/* HEADER */}
+        <Text style={styles.greeting}>
+          Hello {profile?.full_name ?? "there"}
+        </Text>
+        {/* Date Selector*/}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.dateContainer}
+        >
+          {dates.map((item) => (
+            <TouchableOpacity
+              key={item.fullDate}
+              onPress={() => setSelectedDate(item.fullDate)}
+              style={[
+                styles.dateCard,
+                {
+                  backgroundColor:
+                    selectedDate === item.fullDate
+                      ? colors.primary
+                      : colors.card,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.day,
+                  {
+                    color:
+                      selectedDate === item.fullDate
+                        ? colors.background
+                        : colors.secondaryText,
+                  },
+                ]}
+              >
+                {item.day}
+              </Text>
+
+              <Text
+                style={[
+                  styles.date,
+                  {
+                    color:
+                      selectedDate === item.fullDate
+                        ? colors.background
+                        : colors.text,
+                  },
+                ]}
+              >
+                {item.date}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* CALORIES */}
+
+        <View style={styles.topSection}>
+          <View style={{ flex: 1 }}>
+            <CalorieCard
+              consumed={Math.round(totals.cal)}
+              target={calorieTarget}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.waterMiniCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() => router.push("/water")}
+          >
+            <MaterialCommunityIcons
+              name="cup-water"
+              size={36}
+              color={colors.primary}
+            />
+
+            <Text
+              style={[
+                styles.waterAmount,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              {water} ml
+            </Text>
+
+            <Text
+              style={[
+                styles.waterTarget,
+                {
+                  color: colors.secondaryText,
+                },
+              ]}
+            >
+              {waterTarget / 1000}L/{waterTarget} ml
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {/* STEPS */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>🚶 Steps</Text>
+
+          <Text style={styles.bigNumber}>
+            {steps.toLocaleString()}
+
+            <Text style={styles.smallText}>
+              / {stepTarget.toLocaleString()}
+            </Text>
+          </Text>
+
+          <View style={styles.progressBackground}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${Math.min(100, (steps / stepTarget) * 100)}%`,
+                },
+              ]}
+            />
+          </View>
+
+          <Text style={styles.leftText}>
+            {Math.max(0, stepTarget - steps).toLocaleString()} steps left
+          </Text>
+
+          <Text style={styles.healthNote}>
+            📱 Steps are tracked automatically using your phone's step counter
+            or Health Connect.
+          </Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.macroContainer}
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            const x = e.nativeEvent.contentOffset.x;
+
+            if (x < 90) {
+              setActiveDot(0);
+            } else if (x < 130) {
+              setActiveDot(1);
+            } else {
+              setActiveDot(2);
+            }
+          }}
+        >
+          <MacroCard
+            title="Protein"
+            value={totals.protein}
+            target={proteinTarget}
+          />
+
+          <MacroCard title="Carbs" value={totals.carbs} target={carbTarget} />
+
+          <MacroCard title="Fat" value={totals.fat} target={fatTarget} />
+
+          <MacroCard title="Sugar" value={totals.sugar} target={sugarTarget} />
+
+          <MacroCard title="Fiber" value={totals.fiber} target={fiberTarget} />
+        </ScrollView>
+        <View style={styles.pagination}>
+          {[0, 1, 2].map((i) => (
+            <View
+              key={i}
+              style={[styles.dot, activeDot === i && styles.activeDot]}
+            />
+          ))}
+        </View>
+        {/* FOOD LOG */}
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Today's Log</Text>
+        </View>
+
+        {logs.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>No meals logged yet.</Text>
+          </View>
+        ) : (
+          logs.map((item) => <FoodLogItem key={item.analysis_id} item={item} />)
+        )}
+      </ScrollView>
+
+      {/* FLOATING ADD BUTTON */}
+
+      <AddMenu />
     </View>
-  ) : (
-    logs.map((item) => (
-      <FoodLogItem
-        key={item.analysis_id}
-        item={item}
-      />
-    ))
-  )
-}
-
-</ScrollView>
-
-{/* FLOATING ADD BUTTON */}
-
-<AddMenu />
-
-
-</View>
-
-);
-
+  );
 };
-
 
 export default DashboardScreen;

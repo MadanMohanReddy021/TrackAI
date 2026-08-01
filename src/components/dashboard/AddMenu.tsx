@@ -9,17 +9,13 @@ import { DarkTheme, LightTheme } from "../../theme/colors";
 
 export default function AddMenu() {
   const [open, setOpen] = useState(false);
-const { theme } = useTheme();
+  const { theme } = useTheme();
 
-const colors =
-  theme === "dark"
-    ? DarkTheme
-    : LightTheme;
+  const colors = theme === "dark" ? DarkTheme : LightTheme;
 
-const styles = createStyles(colors);
+  const styles = createStyles(colors);
   return (
     <View style={styles.fabContainer}>
-
       {/* Camera */}
       {open && (
         <TouchableOpacity
@@ -29,7 +25,7 @@ const styles = createStyles(colors);
             router.push("/foodscan");
           }}
         >
-          <Camera size={22} color="#fff" />
+          <Camera size={22} color={colors.background} />
         </TouchableOpacity>
       )}
 
@@ -42,7 +38,7 @@ const styles = createStyles(colors);
             router.push("/voice");
           }}
         >
-          <Mic size={22} color="#fff" />
+          <Mic size={22} color={colors.background} />
         </TouchableOpacity>
       )}
 
@@ -55,18 +51,15 @@ const styles = createStyles(colors);
             router.push("/textfood");
           }}
         >
-          <Type size={22} color="#fff" />
+          <Type size={22} color={colors.background} />
         </TouchableOpacity>
       )}
 
       {/* Main FAB */}
-      <TouchableOpacity
-        style={styles.mainFab}
-        onPress={() => setOpen(!open)}
-      >
+      <TouchableOpacity style={styles.mainFab} onPress={() => setOpen(!open)}>
         <Plus
           size={30}
-          color="#fff"
+          color={colors.background}
           style={{
             transform: [
               {
@@ -76,7 +69,6 @@ const styles = createStyles(colors);
           }}
         />
       </TouchableOpacity>
-
     </View>
   );
 }

@@ -1,116 +1,53 @@
+import { Text, View } from "react-native";
 
-import {
-    Text,
-    View
-} from "react-native";
-
+import CircularProgress from "react-native-circular-progress-indicator";
 import { useTheme } from "../../context/ThemeContext";
 import { createStyles } from "../../styles/dashboardStyles";
 import { DarkTheme, LightTheme } from "../../theme/colors";
 
-interface Props{
-
-consumed:number;
-
-target:number;
-
+interface Props {
+  consumed: number;
+  target: number;
 }
 
+const CalorieCard = ({ consumed, target }: Props) => {
+  const percent = Math.min(100, (consumed / target) * 100);
 
+  const { theme } = useTheme();
 
-const CalorieCard = ({
-consumed,
-target
-}:Props)=>{
+  const colors = theme === "dark" ? DarkTheme : LightTheme;
 
+  const styles = createStyles(colors);
 
-const percent =
-Math.min(
-100,
-(consumed / target) * 100
-);
+  return (
+    <View style={styles.calorieCard}>
+      <Text style={styles.calorieTitle}>🔥 Calories</Text>
 
-const { theme } = useTheme();
+      <View style={styles.calorieProgress}>
+        <CircularProgress
+          value={percent}
+          maxValue={100}
+          radius={65}
+          activeStrokeWidth={14}
+          inActiveStrokeWidth={14}
+          activeStrokeColor={colors.primary}
+          inActiveStrokeColor={colors.progressBackground}
+          showProgressValue={false} // Hide the percentage
+          title={`${consumed.toLocaleString()}`}
+          subtitle={`/ ${target.toLocaleString()} kcal`}
+          titleColor={colors.text}
+          subtitleColor={colors.secondaryText}
+          titleStyle={styles.calorieValue}
+          subtitleStyle={styles.calorieTarget}
+          valueSuffix=""
+        />
+      </View>
 
-const colors =
-  theme === "dark"
-    ? DarkTheme
-    : LightTheme;
-
-const styles = createStyles(colors);
-
-return (
-
-<View style={styles.card}>
-
-
-<Text style={styles.cardTitle}>
-
-🔥 Calories
-
-</Text>
-
-
-
-<Text style={styles.bigNumber}>
-
-{consumed.toLocaleString()}
-
-<Text style={styles.smallText}>
-
- / {target.toLocaleString()} kcal
-
-</Text>
-
-
-</Text>
-
-
-
-<View style={styles.progressBackground}>
-
-
-<View
-
-style={[
-styles.progressFill,
-
-{
-width:`${percent}%`
-}
-
-]}
-
-
-/>
-
-
-</View>
-
-
-
-<Text style={styles.leftText}>
-
-{
-Math.max(
-0,
-target-consumed
-).toLocaleString()
-
-}
-
- kcal left
-
-</Text>
-
-
-
-</View>
-
-);
-
-
+      <Text style={styles.leftCalories}>
+        {Math.max(0, target - consumed).toLocaleString()} kcal left
+      </Text>
+    </View>
+  );
 };
-
 
 export default CalorieCard;

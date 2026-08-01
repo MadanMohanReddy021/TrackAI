@@ -1,4 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../context/ThemeContext";
+import { DarkTheme, LightTheme } from "../theme/colors";
 
 interface Props {
   icon: React.ReactNode;
@@ -13,14 +15,21 @@ export default function TabButton({
   active = false,
   onPress,
 }: Props) {
+  const { theme } = useTheme();
+
+  const colors = theme === "dark" ? DarkTheme : LightTheme;
+
+  const styles = createStyles(colors);
+
   return (
     <TouchableOpacity style={styles.button} onPress={onPress}>
       <View>{icon}</View>
+
       <Text
         style={[
           styles.label,
           active && {
-            color: "#ffc800",
+            color: colors.primary,
             fontWeight: "600",
           },
         ]}
@@ -31,15 +40,16 @@ export default function TabButton({
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-  },
-  label: {
-    marginTop: 4,
-    fontSize: 12,
-    color: "#6b7280",
-  },
-});
+const createStyles = (colors: typeof LightTheme) =>
+  StyleSheet.create({
+    button: {
+      alignItems: "center",
+      justifyContent: "center",
+      flex: 1,
+    },
+    label: {
+      marginTop: 4,
+      fontSize: 12,
+      color: colors.secondaryText,
+    },
+  });

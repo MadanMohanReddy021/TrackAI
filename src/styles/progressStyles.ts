@@ -16,7 +16,28 @@ fontSize: 22,
   content: {
     paddingBottom: 40,
   },
+  header:{
+  height:60,
+  flexDirection:"row",
+  alignItems:"center",
+  justifyContent:"space-between",
+  paddingHorizontal:15,
+  backgroundColor:colors.background,
+},
 
+backButton:{
+  width:40,
+  height:40,
+  justifyContent:"center",
+  alignItems:"center",
+},
+
+
+headerTitle:{
+  fontSize:22,
+  fontWeight:"700",
+  color:colors.text,
+},
 
   center: {
     flex: 1,

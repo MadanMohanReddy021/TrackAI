@@ -9,139 +9,48 @@ import { createStyles } from "../../styles/authStyles";
 import { DarkTheme, LightTheme } from "../../theme/colors";
 
 import {
-  SafeAreaView, ScrollView, StatusBar,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { configureGoogle } from "../../config/google";
 
-
-
-
-
 export default function AuthScreen() {
   const [tab, setTab] = useState<"login" | "signup">("signup");
-  const [otp,setOtp]=useState("");
+  const [otp, setOtp] = useState("");
   const [loginOtpRequired, setLoginOtpRequired] = useState(false);
-const [loginOtp, setLoginOtp] = useState("");
-  const [otpSent,setOtpSent]=useState(false); 
+  const [loginOtp, setLoginOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
-  
+
   const isSignup = tab === "signup";
   const { theme } = useTheme();
 
-const colors =
-  theme === "dark"
-    ? DarkTheme
-    : LightTheme;
+  const colors = theme === "dark" ? DarkTheme : LightTheme;
 
-const styles = createStyles(colors);
-  useEffect(()=>{
-console.log(BASE_URL);
-  configureGoogle();
+  const styles = createStyles(colors);
+  useEffect(() => {
+    console.log(BASE_URL);
+    configureGoogle();
+  }, []);
+  const handleGoogleLogin = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
 
-},[]);
-const handleGoogleLogin = async()=>{
+      const response = await GoogleSignin.signIn();
 
-  try{
+      const tokens = await GoogleSignin.getTokens();
 
-    await GoogleSignin.hasPlayServices();
+      const idToken = tokens.idToken;
 
+      console.log("Google Token:", idToken);
 
-    const response =
-      await GoogleSignin.signIn();
-
-
-    const tokens =
-      await GoogleSignin.getTokens();
-
-
-    const idToken =
-      tokens.idToken;
-
-
-    console.log(
-      "Google Token:",
-      idToken
-    );
-
-
-    const backendResponse =
-    await fetch(
-      `${BASE_URL}/auth/google`,
-      {
-        method:"POST",
-
-        headers:{
-          "Content-Type":"application/json"
-        },
-
-        body:JSON.stringify({
-          idToken
-        })
-      }
-    );
-
-
-    const data =
-      await backendResponse.json();
-
-
-    console.log(
-      "Backend:",
-      data
-    );
-
-
-    if(backendResponse.ok){
-
-
-      await AsyncStorage.setItem(
-        "userid",
-        String(data.userId)
-      );
-
-
-      await AsyncStorage.setItem(
-        "token",
-        data.token
-      );
-
-
-      router.replace("/dashboard");
-
-    }
-    else{
-
-      alert(
-        data.message ||
-        "Google login failed"
-      );
-
-    }
-
-
-  }
-  catch(error){
-
-    console.log(
-      "Google Login Error",
-      error
-    );
-
-  }
-
-};
- const handleSignup = async () => {
-
-  try {
-
-    const response = await fetch(
-      `${BASE_URL}/signup`,
-      {
+      const backendResponse = await fetch(`${BASE_URL}/auth/google`, {
         method: "POST",
 
         headers: {
@@ -149,296 +58,205 @@ const handleGoogleLogin = async()=>{
         },
 
         body: JSON.stringify({
+          idToken,
+        }),
+      });
 
+      const data = await backendResponse.json();
+
+      console.log("Backend:", data);
+
+      if (backendResponse.ok) {
+        await AsyncStorage.setItem("userid", String(data.userId));
+
+        await AsyncStorage.setItem("token", data.token);
+
+        router.replace("/dashboard");
+      } else {
+        alert(data.message || "Google login failed");
+      }
+    } catch (error) {
+      console.log("Google Login Error", error);
+    }
+  };
+  const handleSignup = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/signup`, {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
           name,
           email,
           password,
-
         }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        await AsyncStorage.setItem("userid", String(data.userid));
+        router.replace("/onboarding");
       }
-    );
+      if (response.status == 400) {
+        await AsyncStorage.setItem("userid", String(data.userid));
+        setOtpSent(true);
 
-
-    const data = await response.json();
-
-
-    if (response.status==400) {
- await AsyncStorage.setItem(
-        "userid",
-        String(data.userid)
-      );
-      setOtpSent(true);
-
-      alert(
-        "OTP sent to your email"
-      );
-
-    } 
-    else {
-
-      alert(
-        data.message ||
-        "Signup failed"
-      );
-
+        alert("OTP sent to your email");
+      } else {
+        alert(data.message || "Signup failed");
+      }
+    } catch (error) {
+      console.log(error);
     }
+  };
+  const handleLogin = async () => {
+    try {
+      if (!email.trim()) {
+        alert("Please enter your email");
+        return;
+      }
 
+      if (!password.trim()) {
+        alert("Please enter your password");
+        return;
+      }
 
-  } catch(error){
+      const response = await fetch(`${BASE_URL}/login`, {
+        method: "POST",
 
-    console.log(error);
-
-  }
-
-};
-const handleLogin = async () => {
-
-  try {
-
-    if (!email.trim()) {
-      alert("Please enter your email");
-      return;
-    }
-
-    if (!password.trim()) {
-      alert("Please enter your password");
-      return;
-    }
-
-
-    const response = await fetch(
-      `${BASE_URL}/login`,
-      {
-        method:"POST",
-
-        headers:{
-          "Content-Type":"application/json"
+        headers: {
+          "Content-Type": "application/json",
         },
 
-        body:JSON.stringify({
+        body: JSON.stringify({
           email,
-          password
-        })
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log("Login Response:", data);
+
+      console.log(response.ok);
+      // LOGIN SUCESS
+      if (response.ok) {
+        await AsyncStorage.setItem("userid", String(data.userid));
+        console.log(response.status);
+        if (data.token) {
+          await AsyncStorage.setItem("token", data.token);
+        }
+        router.replace("/dashboard");
       }
-    );
+      // OTP REQUIRED
+      else if (response.status === 400) {
+        await AsyncStorage.setItem("userid", String(data.userid));
+        setLoginOtpRequired(true);
 
-
-    const data = await response.json();
-
-
-    console.log("Login Response:", data);
-
-
-console.log(response.ok);
-    // LOGIN SUCESS
-    if(response.ok){
-      await AsyncStorage.setItem(
-        "userid",
-        String(data.userid)
-      );
-    console.log(response.status);
-      if(data.token){
-        await AsyncStorage.setItem(
-          "token",
-          data.token
-        );
+        alert(data.message || "OTP verification required");
+      } else {
+        alert(data.message || "Invalid credentials");
       }
-      router.replace("/dashboard");
+    } catch (error) {
+      console.log("Login Error:", error);
     }
-    // OTP REQUIRED
-    else if(response.status === 400){
+  };
+  const verifyOTP = async () => {
+    try {
+      const userid = await AsyncStorage.getItem("userid");
+      const enteredOtp = isSignup ? otp : loginOtp;
 
-await AsyncStorage.setItem(
-        "userid",
-        String(data.userid)
-      );
-      setLoginOtpRequired(true);
+      if (!enteredOtp.trim()) {
+        alert("Please enter OTP");
+        return;
+      }
 
+      const response = await fetch(
+        `${BASE_URL}${isSignup ? "/signup/otpverify" : "/signup/otpverify"}`,
+        {
+          method: "POST",
 
-      alert(
-        data.message ||
-        "OTP verification required"
-      );
+          headers: {
+            "Content-Type": "application/json",
+          },
 
+          body: JSON.stringify({
+            userid,
 
-    }
-
-
-    else{
-
-
-      alert(
-        data.message ||
-        "Invalid credentials"
-      );
-
-
-    }
-
-
-
-  }
-  catch(error){
-
-    console.log(
-      "Login Error:",
-      error
-    );
-
-  }
-
-};
-const verifyOTP = async () => {
-
-  try {
-const userid = await AsyncStorage.getItem("userid");
-    const enteredOtp = isSignup
-      ? otp
-      : loginOtp;
-
-
-    if (!enteredOtp.trim()) {
-
-      alert("Please enter OTP");
-      return;
-
-    }
-
-
-    const response = await fetch(
-      `${BASE_URL}${
-        isSignup
-          ? "/signup/otpverify"
-          : "/signup/otpverify"
-      }`,
-      {
-        method:"POST",
-
-        headers:{
-          "Content-Type":"application/json"
+            otp: enteredOtp,
+          }),
         },
+      );
 
-        body:JSON.stringify({
+      const data = await response.json();
 
-          userid,
+      console.log("OTP Verify Response:", data);
 
-          otp: enteredOtp
+      if (response.ok) {
+        // Store userid from backend
 
-        })
+        await AsyncStorage.setItem("userid", String(data.userId));
 
+        // Store token if backend sends
+
+        if (data.token) {
+          await AsyncStorage.setItem("token", data.token);
+        }
+
+        // clear OTP
+
+        setOtp("");
+        setLoginOtp("");
+
+        // hide OTP boxes
+
+        setOtpSent(false);
+        setLoginOtpRequired(false);
+
+        router.replace("/dashboard");
+      } else {
+        alert(data.message || "Invalid OTP");
       }
-    );
-
-
-    const data = await response.json();
-
-
-    console.log(
-      "OTP Verify Response:",
-      data
-    );
-
-
-    if(response.ok){
-
-
-      // Store userid from backend
-
-      await AsyncStorage.setItem(
-        "userid",
-        String(data.userId)
-      );
-
-
-      // Store token if backend sends
-
-      if(data.token){
-
-        await AsyncStorage.setItem(
-          "token",
-          data.token
-        );
-
-      }
-
-
-      // clear OTP
-
-      setOtp("");
-      setLoginOtp("");
-
-
-      // hide OTP boxes
-
-      setOtpSent(false);
-      setLoginOtpRequired(false);
-
-
-
-      router.replace(
-        "/dashboard"
-      );
-
-
+    } catch (error) {
+      console.log("Verify OTP Error:", error);
     }
-    else{
-
-
-      alert(
-        data.message ||
-        "Invalid OTP"
-      );
-
-
-    }
-
-
-  }
-  catch(error){
-
-    console.log(
-      "Verify OTP Error:",
-      error
-    );
-
-  }
-
-};
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
+  };
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   return (
     <SafeAreaView style={styles.container}>
-        <ScrollView
-    contentContainerStyle={styles.scrollContent}
-    showsVerticalScrollIndicator={false}
-    keyboardShouldPersistTaps="handled"
-  >
-      <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
 
-      <View style={styles.content}>
+        <View style={styles.content}>
+          {/* Badge */}
 
-        {/* Badge */}
+          <View style={styles.badge}>
+            <Ionicons name="sparkles" size={15} color="#F59E0B" />
+            <Text style={styles.badgeText}>Personal AI Fitness Coach</Text>
+          </View>
 
-        <View style={styles.badge}>
-          <Ionicons name="sparkles" size={15} color="#F59E0B" />
-          <Text style={styles.badgeText}>
-            Personal AI Fitness Coach
+          {/* Title */}
+
+          <Text style={styles.title}>
+            Your smartest{"\n"}
+            fitness investment{"\n"}
+            starts here.
           </Text>
-        </View>
 
-        {/* Title */}
-
-        <Text style={styles.title}>
-  Your smartest{"\n"}
-  fitness investment{"\n"}
-  starts here.
-</Text>
-
-<Text style={styles.subtitle}>
-  Track nutrition, build better habits and achieve
-  your goals with your own AI coach.
-</Text>
-{/* <View style={styles.heroCircle}>
+          <Text style={styles.subtitle}>
+            Track nutrition, build better habits and achieve your goals with
+            your own AI coach.
+          </Text>
+          {/* <View style={styles.heroCircle}>
 
   <View style={styles.chart}>
 
@@ -460,312 +278,199 @@ const [password, setPassword] = useState("");
 
 </View> */}
 
-        {/* Tabs */}
+          {/* Tabs */}
 
-        <View style={styles.tabs}>
-
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              tab === "signup" && styles.activeTab,
-            ]}
-            onPress={() => setTab("signup")}
-          >
-            <Ionicons
-              name="person-outline"
-              size={18}
-              color={tab === "signup" ? "#F59E0B" : "#777"}
-            />
-
-            <Text
-              style={[
-                styles.tabText,
-                tab === "signup" && styles.activeText,
-              ]}
+          <View style={styles.tabs}>
+            <TouchableOpacity
+              style={[styles.tab, tab === "signup" && styles.activeTab]}
+              onPress={() => setTab("signup")}
             >
-              Get Started
-            </Text>
-          </TouchableOpacity>
+              <Ionicons
+                name="person-outline"
+                size={18}
+                color={tab === "signup" ? "#F59E0B" : "#777"}
+              />
 
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              tab === "login" && styles.activeTab,
-            ]}
-            onPress={() => setTab("login")}
-          >
-            <Ionicons
-              name="log-in-outline"
-              size={18}
-              color={tab === "login" ? "#F59E0B" : "#777"}
-            />
+              <Text
+                style={[styles.tabText, tab === "signup" && styles.activeText]}
+              >
+                Get Started
+              </Text>
+            </TouchableOpacity>
 
-            <Text
-              style={[
-                styles.tabText,
-                tab === "login" && styles.activeText,
-              ]}
+            <TouchableOpacity
+              style={[styles.tab, tab === "login" && styles.activeTab]}
+              onPress={() => setTab("login")}
             >
-              Welcome Back
-            </Text>
-          </TouchableOpacity>
+              <Ionicons
+                name="log-in-outline"
+                size={18}
+                color={tab === "login" ? "#F59E0B" : "#777"}
+              />
 
-        </View>
+              <Text
+                style={[styles.tabText, tab === "login" && styles.activeText]}
+              >
+                Welcome Back
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Name */}
+          {/* Name */}
 
-        {tab === "signup" && (
-          <>
-            <Text style={styles.label}>
-              Full Name
-            </Text>
+          {tab === "signup" && (
+            <>
+              <Text style={styles.label}>Full Name</Text>
 
-            <TextInput
-              placeholder="Alex Johnson"
-              placeholderTextColor="#999"
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-            />
-          </>
-        )}
+              <TextInput
+                placeholder="Alex Johnson"
+                placeholderTextColor="#999"
+                value={name}
+                onChangeText={setName}
+                style={styles.input}
+              />
+            </>
+          )}
 
-        {/* Email */}
+          {/* Email */}
 
-        <Text style={styles.label}>
-          Email Address
-        </Text>
-
-        <TextInput
-          placeholder="you@example.com"
-          placeholderTextColor="#999"
-          keyboardType="email-address"
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        {/* Password */}
-
-        <Text style={styles.label}>
-          {tab === "signup"
-            ? "Create Password"
-            : "Password"}
-        </Text>
-
-        <View style={styles.passwordContainer}>
+          <Text style={styles.label}>Email Address</Text>
 
           <TextInput
-            secureTextEntry={!showPassword}
-            placeholder="••••••••••"
+            placeholder="you@example.com"
             placeholderTextColor="#999"
-            style={styles.passwordInput}
-            value={password}
-            onChangeText={setPassword}
+            keyboardType="email-address"
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
           />
+
+          {/* Password */}
+
+          <Text style={styles.label}>
+            {tab === "signup" ? "Create Password" : "Password"}
+          </Text>
+
+          <View style={styles.passwordContainer}>
+            <TextInput
+              secureTextEntry={!showPassword}
+              placeholder="••••••••••"
+              placeholderTextColor="#999"
+              style={styles.passwordInput}
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color="#777"
+              />
+            </TouchableOpacity>
+          </View>
+          {otpSent && (
+            <>
+              <Text style={styles.label}>Verification Code</Text>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Enter 6 digit OTP"
+                placeholderTextColor="#999"
+                keyboardType="number-pad"
+                maxLength={6}
+                value={otp}
+                onChangeText={setOtp}
+              />
+            </>
+          )}
+          {loginOtpRequired && (
+            <>
+              <Text style={styles.label}>Verification Code</Text>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Enter 6 digit OTP"
+                placeholderTextColor="#999"
+                keyboardType="number-pad"
+                maxLength={6}
+                value={loginOtp}
+                onChangeText={setLoginOtp}
+              />
+            </>
+          )}
+          {/* Button */}
 
           <TouchableOpacity
-            onPress={() =>
-              setShowPassword(!showPassword)
-            }
-          >
-
-            <Ionicons
-              name={
-                showPassword
-                  ? "eye-off-outline"
-                  : "eye-outline"
+            style={styles.button}
+            onPress={() => {
+              if (isSignup) {
+                if (!otpSent) {
+                  handleSignup();
+                } else {
+                  verifyOTP();
+                }
+              } else {
+                if (loginOtpRequired) {
+                  verifyOTP();
+                } else {
+                  handleLogin();
+                }
               }
-              size={22}
-              color="#777"
-            />
+            }}
+          >
+            <Text style={styles.buttonText}>
+              {isSignup ? "Start Free Today" : "Sign In"}
+            </Text>
+
+            <Ionicons name="arrow-forward" size={18} color="white" />
           </TouchableOpacity>
 
+          {/* Divider */}
+
+          <View style={styles.dividerRow}>
+            <View style={styles.line} />
+
+            <Text style={styles.or}>OR</Text>
+
+            <View style={styles.line} />
+          </View>
+
+          {/* Google */}
+
+          <TouchableOpacity
+            style={styles.googleButton}
+            onPress={handleGoogleLogin}
+          >
+            <Ionicons name="logo-google" size={22} color="#000" />
+
+            <Text style={styles.googleText}>Continue with Google</Text>
+          </TouchableOpacity>
+          <View style={styles.usersContainer}>
+            <View style={styles.avatarRow}>
+              <View style={styles.avatar} />
+              <View style={styles.avatar} />
+              <View style={styles.avatar} />
+              <View style={styles.avatar} />
+            </View>
+
+            <View>
+              <Text style={styles.rating}>★★★★★</Text>
+
+              <Text style={styles.trusted}>
+                Trusted by 25,000+ fitness enthusiasts
+              </Text>
+            </View>
+          </View>
+          <View style={styles.footer}>
+            <Ionicons name="lock-closed" size={14} color="#999" />
+
+            <Text style={styles.footerText}>
+              Your data is secure and encrypted
+            </Text>
+          </View>
         </View>
-            {
-otpSent && (
-
-<>
-
-<Text style={styles.label}>
-Verification Code
-</Text>
-
-
-<TextInput
-
-style={styles.input}
-
-placeholder="Enter 6 digit OTP"
-
-placeholderTextColor="#999"
-
-keyboardType="number-pad"
-
-maxLength={6}
-
-value={otp}
-
-onChangeText={setOtp}
-
-/>
-
-</>
-
-)
-}
-{
-loginOtpRequired && (
-
-<>
-
-<Text style={styles.label}>
-Verification Code
-</Text>
-
-
-<TextInput
-
-style={styles.input}
-
-placeholder="Enter 6 digit OTP"
-
-placeholderTextColor="#999"
-
-keyboardType="number-pad"
-
-maxLength={6}
-
-value={loginOtp}
-
-onChangeText={setLoginOtp}
-
-/>
-
-
-</>
-
-)
-}
-        {/* Button */}
-
-       <TouchableOpacity
-  style={styles.button}
-  onPress={() => {
-
-  if(isSignup){
-
-    if(!otpSent){
-
-      handleSignup();
-
-    }
-    else{
-
-      verifyOTP();
-
-    }
-
-  }
-  else{
-
-    if(loginOtpRequired){
-
-      verifyOTP();
-
-    }
-    else{
-
-      handleLogin();
-
-    }
-
-  }
-
-}}
->
-  <Text style={styles.buttonText}>
-    {isSignup ? "Start Free Today" : "Sign In"}
-  </Text>
-
-  <Ionicons
-    name="arrow-forward"
-    size={18}
-    color="white"
-  />
-</TouchableOpacity>
-
-        {/* Divider */}
-
-        <View style={styles.dividerRow}>
-
-          <View style={styles.line} />
-
-          <Text style={styles.or}>
-            OR
-          </Text>
-
-          <View style={styles.line} />
-
-        </View>
-
-        {/* Google */}
-
-<TouchableOpacity
-style={styles.googleButton}
-onPress={handleGoogleLogin}
->
-          <Ionicons
-            name="logo-google"
-            size={22}
-            color="#000"
-          />
-
-          <Text style={styles.googleText}>
-            Continue with Google
-          </Text>
-
-        </TouchableOpacity>
-        <View style={styles.usersContainer}>
-
-<View style={styles.avatarRow}>
-
-<View style={styles.avatar}/>
-<View style={styles.avatar}/>
-<View style={styles.avatar}/>
-<View style={styles.avatar}/>
-
-</View>
-
-<View>
-
-<Text style={styles.rating}>
-★★★★★
-</Text>
-
-<Text style={styles.trusted}>
-Trusted by 25,000+
-fitness enthusiasts
-</Text>
-
-</View>
-
-</View>
-<View style={styles.footer}>
-
-<Ionicons
-name="lock-closed"
-size={14}
-color="#999"
-/>
-
-<Text style={styles.footerText}>
-Your data is secure and encrypted
-</Text>
-
-</View>
-      </View></ScrollView>
+      </ScrollView>
     </SafeAreaView>
   );
 }
-

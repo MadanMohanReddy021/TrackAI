@@ -13,252 +13,203 @@ import ScanCamera from "../components/scan/CameraView";
 import useCamera from "../hooks/useCamera";
 import useImagePicker from "../hooks/useImagePicker";
 
-import {
-    scanFood,
-    uploadFoodImage,
-} from "../services/scanApi";
+import { scanFood, uploadFoodImage } from "../services/scanApi";
 
 import ResultView from "@/components/scan/ResultView";
 import { FoodItem } from "../types/food";
 
-const MEALS = [
-    "Breakfast",
-    "Lunch",
-    "Dinner",
-    "Snack",
-];
+const MEALS = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
 export default function ScanScreen() {
-    // ---------------- Camera ----------------
+  // ---------------- Camera ----------------
 
-    const {
-        permission,
-        cameraRef,
-        flash,
-        cameraType,
-        toggleFlash,
-        switchCamera,
-        capture,
-    } = useCamera();
+  const {
+    permission,
+    cameraRef,
+    flash,
+    cameraType,
+    toggleFlash,
+    switchCamera,
+    capture,
+  } = useCamera();
 
-    // ---------------- Gallery ----------------
+  // ---------------- Gallery ----------------
 
-    const {
-        pickImage,
-    } = useImagePicker();
+  const { pickImage } = useImagePicker();
 
-    // ---------------- State ----------------
+  // ---------------- State ----------------
 
-    const [items, setItems] =
-        useState<FoodItem[]>([]);
+  const [items, setItems] = useState<FoodItem[]>([]);
 
-    const [meal, setMeal] =
-        useState("Snack");
+  const [meal, setMeal] = useState("Snack");
 
-    const [imageUrl, setImageUrl] =
-        useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
-    const [displayImage, setDisplayImage] =
-        useState("");
+  const [displayImage, setDisplayImage] = useState("");
 
-    const [cameraOpen, setCameraOpen] =
-        useState(true);
+  const [cameraOpen, setCameraOpen] = useState(true);
 
-    const [scanning, setScanning] =
-        useState(false);
+  const [scanning, setScanning] = useState(false);
 
-    const [saving, setSaving] =
-        useState(false);
+  const [saving, setSaving] = useState(false);
 
-    const [sheetExpanded, setSheetExpanded] =
-        useState(false);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
 
-    const [editingIndex, setEditingIndex] =
-        useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-    // ---------------- Permission ----------------
+  // ---------------- Permission ----------------
 
-    if (!permission)
-        return null;
+  if (!permission) return null;
 
-    if (!permission.granted) {
-        return (
-            <SafeAreaView style={styles.center}>
-                <Text style={styles.permission}>
-                    Camera permission denied
-                </Text>
-            </SafeAreaView>
-        );
-    }
-
-    // ---------------- Upload + AI Scan ----------------
-
-    async function processImage(uri: string) {
-        try {
-            setScanning(true);
-            console.log("Processing image");
-            // Upload image to backend
-
-            const upload =
-                await uploadFoodImage(uri);
-
-            // AI Scan
-
-            const result =
-                await scanFood(upload.imageUrl);
-
-            setImageUrl(upload.imageUrl);
-
-            setDisplayImage(uri);
-
-            setItems(result.items ?? []);
-
-            setCameraOpen(false);
-        } catch (err: any) {
-            Alert.alert(
-                "Error",
-                err?.message ??
-                    "Scan failed"
-            );
-        } finally {
-            setScanning(false);
-        }
-    }
-
-    // ---------------- Capture ----------------
-
-    async function onCapture() {
-        const photo =await capture();
-
-        if (!photo) {
-            Alert.alert(
-                "Error",
-                "Could not capture image"
-            );
-            return;
-        }
-
-        processImage(photo.uri);
-    }
-
-    // ---------------- Gallery ----------------
-
-    async function openGallery() {
-        const asset =
-            await pickImage();
-
-        if (!asset)
-            return;
-
-        processImage(asset.uri);
-    }
-
-    // ---------------- Loading ----------------
-
-    if (scanning) {
-        return (
-            <View style={styles.loading}>
-                <ActivityIndicator
-                    size="large"
-                />
-
-                <Text style={styles.loadingText}>
-                    Analyzing Meal...
-                </Text>
-            </View>
-        );
-    }
-
-    // ---------------- Result Screen Placeholder ----------------
-
-   if (!cameraOpen) {
-
+  if (!permission.granted) {
     return (
-
-        <ResultView
-
-            image={displayImage}
-
-            items={items}
-
-        />
-
+      <SafeAreaView style={styles.center}>
+        <Text style={styles.permission}>Camera permission denied</Text>
+      </SafeAreaView>
     );
+  }
 
-}
+  // ---------------- Upload + AI Scan ----------------
 
-    // ---------------- Camera ----------------
+  async function processImage(uri: string) {
+    try {
+      setScanning(true);
+      console.log("Processing image");
+      // Upload image to backend
 
+      const upload = await uploadFoodImage(uri);
+
+      // AI Scan
+
+      const result = await scanFood(upload.imageUrl);
+
+      upload.imageUrl;
+
+      setDisplayImage(uri);
+
+      setItems(result.items ?? []);
+
+      setCameraOpen(false);
+    } catch (err: any) {
+      Alert.alert("Error", err?.message ?? "Scan failed");
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  // ---------------- Capture ----------------
+
+  async function onCapture() {
+    const photo = await capture();
+
+    if (!photo) {
+      Alert.alert("Error", "Could not capture image");
+      return;
+    }
+
+    processImage(photo.uri);
+  }
+
+  // ---------------- Gallery ----------------
+
+  async function openGallery() {
+    const asset = await pickImage();
+
+    if (!asset) return;
+
+    processImage(asset.uri);
+  }
+
+  // ---------------- Loading ----------------
+
+  if (scanning) {
     return (
-        <ScanCamera
-            cameraRef={cameraRef}
-            type={cameraType}
-            flash={flash}
-            onFlash={toggleFlash}
-            onSwitch={switchCamera}
-            onCapture={onCapture}
-            onGallery={openGallery}
-            onClose={() => router.back()}
-        />
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" />
+
+        <Text style={styles.loadingText}>Analyzing Meal...</Text>
+      </View>
     );
+  }
+
+  // ---------------- Result Screen Placeholder ----------------
+
+  if (!cameraOpen) {
+    return <ResultView image={displayImage} items={items} />;
+  }
+
+  // ---------------- Camera ----------------
+
+  return (
+    <ScanCamera
+      cameraRef={cameraRef}
+      type={cameraType}
+      flash={flash}
+      onFlash={toggleFlash}
+      onSwitch={switchCamera}
+      onCapture={onCapture}
+      onGallery={openGallery}
+      onClose={() => router.back()}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
-    center: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
-    permission: {
-        fontSize: 18,
-        fontWeight: "600",
-    },
+  permission: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
 
-    loading: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
-    loadingText: {
-        marginTop: 15,
-        fontSize: 16,
-    },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+  },
 
-    result: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: "#fff",
-    },
+  result: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#fff",
+  },
 
-    title: {
-        fontSize: 28,
-        fontWeight: "700",
-        marginBottom: 15,
-    },
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 15,
+  },
 
-    subtitle: {
-        marginTop: 20,
-        fontSize: 18,
-        fontWeight: "600",
-    },
+  subtitle: {
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: "600",
+  },
 
-    small: {
-        color: "#666",
-        marginTop: 5,
-    },
+  small: {
+    color: "#666",
+    marginTop: 5,
+  },
 
-    foodCard: {
-        marginTop: 15,
-        padding: 15,
-        borderRadius: 12,
-        backgroundColor: "#F4F4F4",
-    },
+  foodCard: {
+    marginTop: 15,
+    padding: 15,
+    borderRadius: 12,
+    backgroundColor: "#F4F4F4",
+  },
 
-    foodName: {
-        fontSize: 18,
-        fontWeight: "700",
-        marginBottom: 5,
-    },
+  foodName: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 5,
+  },
 });

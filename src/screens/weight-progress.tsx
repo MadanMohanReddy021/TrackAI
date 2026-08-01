@@ -14,6 +14,8 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { useTheme } from "../context/ThemeContext";
+import { createStyles } from "../styles/weightProgressStyles";
 const API =BASE_URL;
 
 interface WeightHistory {
@@ -23,6 +25,10 @@ interface WeightHistory {
 }
 
 export default function WeightProgress() {
+  const {colors}=useTheme();
+
+
+const styles=createStyles(colors);
   const [loading, setLoading] = useState(true);
 
 

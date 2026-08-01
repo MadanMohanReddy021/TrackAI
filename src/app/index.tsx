@@ -1,5 +1,4 @@
-
-import Dashboard from "./dashboard";
+import Splash from "./splash";
 export default function Index() {
-  return <Dashboard />;
+  return <Splash />;
 }

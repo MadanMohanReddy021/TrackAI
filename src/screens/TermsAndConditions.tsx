@@ -1,24 +1,28 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
 export default function TermsAndConditions() {
+   const {colors}=useTheme();
+
+  const styles=createStyles(colors);
   return (
      <View style={styles.container}>
       {/* Fixed Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons
-            name="arrow-back"
-            size={28}
-            color="#000"
-          />
+         <Ionicons
+ name="arrow-back"
+ size={28}
+ color={colors.text}
+/>
         </TouchableOpacity>
 
         <Text style={styles.headerTitle}>
@@ -473,79 +477,148 @@ export default function TermsAndConditions() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fdf5e3",
-  },
+const createStyles = (colors:any) =>
+StyleSheet.create({
 
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 25,
-    paddingBottom: 40,
-  },
+container:{
+  flex:1,
+  backgroundColor:colors.background,
+},
 
-  header: {
-    paddingTop:15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 25,
-  },
 
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#000",
-  },
+content:{
+  paddingHorizontal:20,
+  paddingTop:25,
+  paddingBottom:40,
+},
 
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: "#000",
-  },
 
-  date: {
-    fontSize: 15,
-    color: "#777",
-    marginTop: 6,
-    marginBottom: 22,
-  },
 
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#000",
-    marginTop: 30,
-    marginBottom: 12,
-  },
+header:{
 
-  paragraph: {
-    fontSize: 15,
-    lineHeight: 26,
-    color: "#444",
-    marginBottom: 12,
-  },
+  paddingTop:15,
 
-  bullet: {
-    fontSize: 15,
-    lineHeight: 26,
-    color: "#444",
-    marginBottom: 8,
-    marginLeft: 8,
-  },
+  flexDirection:"row",
 
-  email: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
-    marginTop: 10,
-  },
+  alignItems:"center",
 
-  footer: {
-    marginTop: 40,
-    textAlign: "center",
-    fontSize: 14,
-    color: "#777",
-  },
+  justifyContent:"space-between",
+
+  marginBottom:25,
+
+},
+
+
+
+headerTitle:{
+
+  fontSize:22,
+
+  fontWeight:"700",
+
+  color:colors.text,
+
+},
+
+
+
+title:{
+
+  fontSize:30,
+
+  fontWeight:"700",
+
+  color:colors.text,
+
+},
+
+
+
+date:{
+
+  fontSize:15,
+
+  color:colors.secondaryText,
+
+  marginTop:6,
+
+  marginBottom:22,
+
+},
+
+
+
+sectionTitle:{
+
+  fontSize:22,
+
+  fontWeight:"700",
+
+  color:colors.text,
+
+  marginTop:30,
+
+  marginBottom:12,
+
+},
+
+
+
+paragraph:{
+
+  fontSize:15,
+
+  lineHeight:26,
+
+  color:colors.secondaryText,
+
+  marginBottom:12,
+
+},
+
+
+
+bullet:{
+
+  fontSize:15,
+
+  lineHeight:26,
+
+  color:colors.secondaryText,
+
+  marginBottom:8,
+
+  marginLeft:8,
+
+},
+
+
+
+email:{
+
+  fontSize:16,
+
+  fontWeight:"600",
+
+  color:colors.primary,
+
+  marginTop:10,
+
+},
+
+
+
+footer:{
+
+  marginTop:40,
+
+  textAlign:"center",
+
+  fontSize:14,
+
+  color:colors.secondaryText,
+
+},
+
+
 });

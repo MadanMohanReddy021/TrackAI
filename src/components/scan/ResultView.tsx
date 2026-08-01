@@ -1,11 +1,12 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    Alert, ScrollView,
+    Alert,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from "react-native";
 import { saveMeal } from "../../services/mealApi";
 import { FoodItem } from "../../types/food";
@@ -23,254 +24,184 @@ import MealSelector from "./MealSelector";
 import NutritionCard from "./NutritionCard";
 const [meal, setMeal] = useState("Lunch");
 type Props = {
+  image: string;
 
-    image: string;
-
-    items: FoodItem[];
-
+  items: FoodItem[];
 };
 
 export default function ResultView({
+  image,
 
-    image,
-
-    items,
-
+  items,
 }: Props) {
+  const totals = calculateTotals(items);
+  const [editorVisible, setEditorVisible] = useState(false);
 
-    const totals =calculateTotals(items);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [meal, setMeal] = useState("Lunch");
+  const score = calculateHealthScore(items);
+  const [foods, setFoods] = useState(items);
+  function onIncrease(index: number) {
     const [editorVisible, setEditorVisible] = useState(false);
 
-const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-const [meal, setMeal] = useState("Lunch");
-    const score =
-        calculateHealthScore(items);
-        const [foods, setFoods] = useState(items);
-        function onIncrease(index: number) {
-const [editorVisible, setEditorVisible] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const updated = [...foods];
 
-const [selectedIndex, setSelectedIndex] =useState<number | null>(null);
-  const updated = [...foods];
+    updated[index].quantity += 1;
 
-  updated[index].quantity += 1;
+    updated[index].calories = updated[index].calories + updated[index].calories;
 
-  updated[index].calories =
-    updated[index].calories + updated[index].calories;
+    updated[index].protein_g =
+      updated[index].protein_g + updated[index].protein_g;
 
-  updated[index].protein_g =
-    updated[index].protein_g + updated[index].protein_g;
+    updated[index].carbs_g = updated[index].carbs_g + updated[index].carbs_g;
 
-  updated[index].carbs_g =
-    updated[index].carbs_g + updated[index].carbs_g;
+    updated[index].fat_g = updated[index].fat_g + updated[index].fat_g;
 
-  updated[index].fat_g =
-    updated[index].fat_g + updated[index].fat_g;
-
-  setFoods(updated);
-
-}
-function onEdit(index: number) {
-  setSelectedIndex(index);
-  setEditorVisible(true);
-}
-function onDecrease(index: number) {
-
-  const updated = [...foods];
-
-  if (updated[index].quantity <= 1)
-    return;
-
-  updated[index].quantity -= 1;
-
-  updated[index].calories =
-    Math.round(
-      updated[index].calories / 2
-    );
-
-  updated[index].protein_g =
-    updated[index].protein_g / 2;
-
-  updated[index].carbs_g =
-    updated[index].carbs_g / 2;
-
-  updated[index].fat_g =
-    updated[index].fat_g / 2;
-
-  setFoods(updated);
-
-}
-function onDelete(index: number) {
-
-  setFoods(
-
-    foods.filter((_, i) => i !== index)
-
-  );
-
-}
-function onSave(food: FoodItem) {
-
-  if (selectedIndex === null)
-    return;
-
-  const updated = [...foods];
-
-  updated[selectedIndex] = food;
-
-  setFoods(updated);
-
-  setEditorVisible(false);
-
-}
-async function onSaveMeal() {
-
-  try {
-
-    await saveMeal({
-
-      mealType: meal,
-
-      foods,
-
-      totals,
-
-      score,
-
-      image,
-
-    });
-
-    Alert.alert(
-      "Success",
-      "Meal saved successfully."
-    );
-
-  } catch {
-
-    Alert.alert(
-      "Error",
-      "Could not save meal."
-    );
-
+    setFoods(updated);
   }
+  function onEdit(index: number) {
+    setSelectedIndex(index);
+    setEditorVisible(true);
+  }
+  function onDecrease(index: number) {
+    const updated = [...foods];
 
-}
+    if (updated[index].quantity <= 1) return;
+
+    updated[index].quantity -= 1;
+
+    updated[index].calories = Math.round(updated[index].calories / 2);
+
+    updated[index].protein_g = updated[index].protein_g / 2;
+
+    updated[index].carbs_g = updated[index].carbs_g / 2;
+
+    updated[index].fat_g = updated[index].fat_g / 2;
+
+    setFoods(updated);
+  }
+  function onDelete(index: number) {
+    setFoods(foods.filter((_, i) => i !== index));
+  }
+  function onSave(food: FoodItem) {
+    if (selectedIndex === null) return;
+
+    const updated = [...foods];
+
+    updated[selectedIndex] = food;
+
+    setFoods(updated);
+
+    setEditorVisible(false);
+  }
+  async function onSaveMeal() {
+    try {
+      await saveMeal({
+        mealType: meal,
+
+        foods,
+
+        totals,
+
+        score,
+
+        image,
+      });
+
+      Alert.alert("Success", "Meal saved successfully.");
+    } catch {
+      Alert.alert("Error", "Could not save meal.");
+    }
+  }
   return (
-  <View style={{ flex: 1 }}>
-    <ImageHeader
-    image={image}
-    score={score}
-    onBack={() => router.back()}
-    onClose={() => router.back()}
-/>
+    <View style={{ flex: 1 }}>
+      <ImageHeader
+        image={image}
+        score={score}
+        onBack={() => router.back()}
+        onClose={() => router.back()}
+      />
 
-    <BottomSheet>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
+      <BottomSheet>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
+            <Text style={styles.title}>Detected Meal</Text>
 
-          <Text style={styles.title}>
-            Detected Meal
-          </Text>
+            <HealthScore score={score} />
 
-          <HealthScore
-    score={score}
-/>
+            {/* Calories */}
 
-          {/* Calories */}
+            <View style={styles.grid}>
+              <NutritionCard
+                title="Calories"
+                value={totals.calories}
+                unit="kcal"
+                color="#F97316"
+              />
 
-          <View style={styles.grid}>
+              <NutritionCard
+                title="Protein"
+                value={totals.protein}
+                unit="g"
+                color="#22C55E"
+              />
+            </View>
 
-<NutritionCard
-title="Calories"
-value={totals.calories}
-unit="kcal"
-color="#F97316"
-/>
+            <View style={styles.grid}>
+              <NutritionCard
+                title="Carbs"
+                value={totals.carbs}
+                unit="g"
+                color="#3B82F6"
+              />
 
-<NutritionCard
-title="Protein"
-value={totals.protein}
-unit="g"
-color="#22C55E"
-/>
+              <NutritionCard
+                title="Fat"
+                value={totals.fat}
+                unit="g"
+                color="#EAB308"
+              />
+            </View>
 
-</View>
+            {/* Meal Selector */}
 
-<View style={styles.grid}>
+            <Text style={styles.section}>Meal Type</Text>
 
-<NutritionCard
-title="Carbs"
-value={totals.carbs}
-unit="g"
-color="#3B82F6"
-/>
+            <MealSelector selected={meal} onSelect={setMeal} />
 
-<NutritionCard
-title="Fat"
-value={totals.fat}
-unit="g"
-color="#EAB308"
-/>
+            {/* Ingredients */}
 
-</View>
+            <Text style={styles.section}>Ingredients</Text>
 
-          {/* Meal Selector */}
+            {items.map((item, index) => (
+              <IngredientCard
+                key={index}
+                item={item}
+                index={index}
+                onIncrease={onIncrease}
+                onDecrease={onDecrease}
+                onDelete={onDelete}
+                onEdit={onEdit}
+              />
+            ))}
+            <IngredientEditor
+              visible={editorVisible}
+              item={selectedIndex !== null ? foods[selectedIndex] : null}
+              onClose={() => setEditorVisible(false)}
+              onSave={onSave}
+            />
+            <AIInsights score={score} />
+            {/* Button */}
 
-          <Text style={styles.section}>
-            Meal Type
-          </Text>
-
-          <MealSelector
-            selected={meal}
-            onSelect={setMeal}
-          />
-
-          {/* Ingredients */}
-
-          <Text style={styles.section}>
-            Ingredients
-          </Text>
-
-          {items.map((item, index) => (
-  <IngredientCard
-  key={index}
-  item={item}
-  index={index}
-  onIncrease={onIncrease}
-  onDecrease={onDecrease}
-  onDelete={onDelete}
-  onEdit={onEdit}
-/>
-))}
-<IngredientEditor
-  visible={editorVisible}
-  item={
-    selectedIndex !== null
-      ? foods[selectedIndex]
-      : null
-  }
-  onClose={() => setEditorVisible(false)}
-  onSave={onSave}
-/>
-<AIInsights
-    score={score}
-/>
-          {/* Button */}
-
-          <TouchableOpacity
-            style={styles.button}
-          >
-            <Text style={styles.buttonText}>
-              Save Meal
-            </Text>
-          </TouchableOpacity>
-
-        </View>
-      </ScrollView>
-    </BottomSheet>
-  </View>
-);
-
+            <TouchableOpacity style={styles.button}>
+              <Text style={styles.buttonText}>Save Meal</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </BottomSheet>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -308,15 +239,13 @@ const styles = StyleSheet.create({
     marginTop: 18,
     justifyContent: "space-between",
   },
-grid:{
+  grid: {
+    flexDirection: "row",
 
-flexDirection:"row",
+    justifyContent: "space-between",
 
-justifyContent:"space-between",
-
-marginTop:15,
-
-},
+    marginTop: 15,
+  },
   section: {
     marginTop: 25,
     marginBottom: 12,
@@ -365,9 +294,8 @@ marginTop:15,
 });
 
 function setEditorVisible(arg0: boolean) {
-    throw new Error("Function not implemented.");
+  throw new Error("Function not implemented.");
 }
 function setSelectedIndex(index: number) {
-    throw new Error("Function not implemented.");
+  throw new Error("Function not implemented.");
 }
-

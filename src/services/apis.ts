@@ -1,8 +1,9 @@
+import BASE_URL from "@/storage/ipAdress";
 import axios from "axios";
 
 const apis = axios.create({
 
-    baseURL: "http://172.22.204.25:3000",
+    baseURL: BASE_URL,
 
     timeout: 30000,
 

@@ -13,12 +13,15 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-
+import { useTheme } from "../context/ThemeContext";
+import { DarkTheme, LightTheme } from "../theme/colors";
 export default function FoodScannerScreen() {
   const cameraRef = useRef<CameraView>(null);
+  const { theme } = useTheme();
 
+  const colors = theme === "dark" ? DarkTheme : LightTheme;
   const [permission, requestPermission] = useCameraPermissions();
 
   const [facing, setFacing] = useState<CameraType>("back");
@@ -26,7 +29,6 @@ export default function FoodScannerScreen() {
   const [loading, setLoading] = useState(false);
 
   const [result, setResult] = useState<any>(null);
-
 
   const [capturedImage, setCapturedImage] = useState("");
 
@@ -46,96 +48,66 @@ export default function FoodScannerScreen() {
     );
   }
 
-const uploadImage = async (uri: string) => {
-  try {
-    setLoading(true);
+  const uploadImage = async (uri: string) => {
+    try {
+      setLoading(true);
 
-    const userid = await AsyncStorage.getItem("userid");
+      const userid = await AsyncStorage.getItem("userid");
 
-    if (!userid) {
-      console.log("User ID not found");
-      return;
+      if (!userid) {
+        console.log("User ID not found");
+        return;
+      }
+
+      // Convert image to JPEG file
+      const result = await ImageManipulator.manipulateAsync(uri, [], {
+        compress: 0.8,
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
+
+      const imageUri = result.uri;
+
+      const file = new File(imageUri);
+
+      const formData = new FormData();
+
+      formData.append("image", {
+        uri: imageUri,
+        name: "food.jpg",
+        type: "image/jpeg",
+      } as any);
+
+      formData.append("userid", userid);
+
+      console.log("FORM DATA:", formData);
+
+      const response = await axios.post(`${API_URL}/analyze-food`, formData, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "multipart/form-data",
+        },
+        transformRequest: () => formData,
+      });
+
+      console.log("Food Analysis Response:", response.data);
+
+      setResult(response.data);
+      router.push({
+        pathname: "/foodresult",
+        params: {
+          image: uri,
+          result: JSON.stringify(response.data),
+        },
+      });
+    } catch (error: any) {
+      console.log(
+        "Food Analysis Error:",
+        error.response?.data || error.message,
+      );
+    } finally {
+      setLoading(false);
     }
-
-
-    // Convert image to JPEG file
-    const result = await ImageManipulator.manipulateAsync(
-  uri,
-  [],
-  {
-    compress: 0.8,
-    format: ImageManipulator.SaveFormat.JPEG,
-  }
-);
-
-const imageUri = result.uri;
-
-const file = new File(imageUri);
-
-
-const formData = new FormData();
-
-
-formData.append(
-  "image",
-  {
-    uri: imageUri,
-    name: "food.jpg",
-    type: "image/jpeg",
-  } as any
-);
-
-
-formData.append(
-  "userid",
-  userid
-);
-
-
-console.log("FORM DATA:", formData);
-
-   const response = await axios.post(
-  `${API_URL}/analyze-food`,
-  formData,
-  {
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "multipart/form-data",
-    },
-    transformRequest: () => formData,
-  }
-);
-
-
-    console.log(
-      "Food Analysis Response:",
-      response.data
-    );
-
-
-    setResult(response.data);
-    router.push({
-  pathname: "/foodresult",
-  params: {
-    image: uri,
-    result: JSON.stringify(response.data),
-  },
-});
-
-
-  } catch (error: any) {
-
-    console.log(
-      "Food Analysis Error:",
-      error.response?.data || error.message
-    );
-
-  } finally {
-
-    setLoading(false);
-
-  }
-};
+  };
   const takePicture = async () => {
     if (!cameraRef.current) return;
 
@@ -165,7 +137,6 @@ console.log("FORM DATA:", formData);
 
   return (
     <View style={styles.container}>
-
       <CameraView
         style={StyleSheet.absoluteFill}
         facing={facing}
@@ -173,36 +144,21 @@ console.log("FORM DATA:", formData);
       />
 
       <View style={styles.overlay}>
-
         {/* Header */}
 
         <View style={styles.header}>
-
           <TouchableOpacity style={styles.topButton}>
-            <Ionicons
-              name="volume-mute-outline"
-              size={28}
-              color="white"
-            />
+            <Ionicons name="volume-mute-outline" size={28} color="white" />
           </TouchableOpacity>
 
           <Text style={styles.title}>Scan Food</Text>
 
           <TouchableOpacity
             style={styles.topButton}
-            onPress={() =>
-              setFacing(
-                facing === "back" ? "front" : "back"
-              )
-            }
+            onPress={() => setFacing(facing === "back" ? "front" : "back")}
           >
-            <Ionicons
-              name="camera-reverse-outline"
-              size={28}
-              color="white"
-            />
+            <Ionicons name="camera-reverse-outline" size={28} color="white" />
           </TouchableOpacity>
-
         </View>
 
         {/* Scan Box */}
@@ -211,45 +167,25 @@ console.log("FORM DATA:", formData);
           <View style={styles.square} />
         </View>
 
-        <Text style={styles.message}>
-          Center your meal inside the frame
-        </Text>
+        <Text style={styles.message}>Center your meal inside the frame</Text>
 
         {/* Bottom */}
 
         <View style={styles.bottomBar}>
-
           <TouchableOpacity onPress={pickImage}>
-            <Ionicons
-              name="images-outline"
-              size={36}
-              color="white"
-            />
+            <Ionicons name="images-outline" size={36} color="white" />
             <Text style={styles.bottomText}>Gallery</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.capture}
-            onPress={takePicture}
-          >
-            <Ionicons
-              name="camera"
-              size={45}
-              color="black"
-            />
+          <TouchableOpacity style={styles.capture} onPress={takePicture}>
+            <Ionicons name="camera" size={45} color="black" />
           </TouchableOpacity>
 
-          <TouchableOpacity>
-            <Ionicons
-              name="close"
-              size={36}
-              color="white"
-            />
+          <TouchableOpacity onPress={router.back} style={styles.closeButton}>
+            <Ionicons name="close" size={36} color={colors.text} />
             <Text style={styles.bottomText}>Close</Text>
           </TouchableOpacity>
-
         </View>
-
       </View>
 
       {/* Loading */}
@@ -261,15 +197,11 @@ console.log("FORM DATA:", formData);
       )}
 
       {/* Result Modal */}
-
-      
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: "black",
@@ -339,7 +271,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
+  closeButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+  },
   bottomText: {
     color: "white",
     textAlign: "center",

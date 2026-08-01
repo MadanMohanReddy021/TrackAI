@@ -1,237 +1,299 @@
+import BASE_URL from "@/storage/ipAdress";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    ScrollView,
-    Text,
-    View
+  ActivityIndicator,
+  Dimensions,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-import BASE_URL from "@/storage/ipAdress";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LineChart } from "react-native-chart-kit";
+
 import { useTheme } from "../context/ThemeContext";
 import { createStyles } from "../styles/progressStyles";
 
 const width = Dimensions.get("window").width;
 
+export default function Progress() {
+  const { colors } = useTheme();
 
+  const styles = createStyles(colors);
 
-export default function Progress(){
+  const [weightLogs, setWeightLogs] = useState<any[]>([
+    {
+      month: "Jan",
+      weight: 82,
+    },
+    {
+      month: "Feb",
+      weight: 80,
+    },
+    {
+      month: "Mar",
+      weight: 78,
+    },
+    {
+      month: "Apr",
+      weight: 77,
+    },
+    {
+      month: "May",
+      weight: 75,
+    },
+    {
+      month: "Jun",
+      weight: 74,
+    },
+  ]);
+  const [nutritionLogs, setNutritionLogs] = useState<any[]>([
+    {
+      date: "Mon",
+      calories: 2200,
+      protein: 120,
+      carbs: 250,
+      fat: 70,
+    },
+    {
+      date: "Tue",
+      calories: 2400,
+      protein: 130,
+      carbs: 280,
+      fat: 75,
+    },
+    {
+      date: "Wed",
+      calories: 2100,
+      protein: 110,
+      carbs: 230,
+      fat: 65,
+    },
+    {
+      date: "Thu",
+      calories: 2600,
+      protein: 140,
+      carbs: 300,
+      fat: 80,
+    },
+    {
+      date: "Fri",
+      calories: 2300,
+      protein: 125,
+      carbs: 260,
+      fat: 72,
+    },
+    {
+      date: "Sat",
+      calories: 2500,
+      protein: 135,
+      carbs: 290,
+      fat: 78,
+    },
+    {
+      date: "Sun",
+      calories: 2700,
+      protein: 150,
+      carbs: 320,
+      fat: 85,
+    },
+  ]);
+  const [loading, setLoading] = useState(true);
 
-  const {theme}=useTheme();
+  const loadProgress = async () => {
+    try {
+      const userid = await AsyncStorage.getItem("userid");
 
-  const styles=createStyles(theme);
+      if (!userid) {
+        console.log("User ID not found");
 
+        return;
+      }
 
-  const [weightLogs,setWeightLogs]=useState<any[]>([]);
-  const [nutritionLogs,setNutritionLogs]=useState<any[]>([]);
-  const [loading,setLoading]=useState(true);
+      const [weightResponse, nutritionResponse] = await Promise.all([
+        fetch(`${BASE_URL}/progress?userid=${userid}`),
 
+        fetch(`${BASE_URL}/get-nutrients-range?userid=${userid}`),
+      ]);
 
-const loadProgress = async () => {
-  try {
+      const weightData = await weightResponse.json();
 
-    const userid = await AsyncStorage.getItem("userid");
+      const nutritionData = await nutritionResponse.json();
 
-    if (!userid) {
-      console.log("User ID not found");
-      return;
+      setWeightLogs(weightData.weightLogs || []);
+
+      setNutritionLogs(nutritionData.data || []);
+    } catch (error) {
+      console.log("Progress loading error:", error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-
-    const [
-      weightResponse,
-      nutritionResponse
-    ] = await Promise.all([
-
-      fetch(
-        `${BASE_URL}/progress?userid=${userid}`
-      ),
-
-      fetch(
-        `${BASE_URL}/get-nutrients-range?userid=${userid}`
-      ),
-
-    ]);
-
-
-    const weightData =
-      await weightResponse.json();
-
-    const nutritionData =
-      await nutritionResponse.json();
-
-
-    setWeightLogs(
-      weightData.weightLogs || []
-    );
-
-
-    setNutritionLogs(
-      nutritionData.nutritionLogs || []
-    );
-
-
-  } catch (error) {
-
-    console.log(
-      "Progress loading error:",
-      error
-    );
-
-  } finally {
-
-    setLoading(false);
-
-  }
-};
-
-  useEffect(()=>{
-
+  useEffect(() => {
     loadProgress();
+  }, []);
 
-  },[]);
-
-
-
-  const createChart=(labels:any[],values:any[])=>({
-
+  const createChart = (labels: any[], values: any[]) => ({
     labels,
 
-    datasets:[
+    datasets: [
       {
-        data:values,
-        strokeWidth:3
-      }
-    ]
-
+        data: values.map(Number),
+        strokeWidth: 3,
+        color: () => "#FFFFFF",
+      },
+    ],
   });
 
-
-
-  if(loading){
-
-    return(
-      <View style={{flex:1,justifyContent:"center",alignItems:"center"}}>
-        <ActivityIndicator size="large"/>
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
-
   }
 
+  const weightChart = {
+    labels: weightLogs.map((item) => item.month),
 
-  const weightChart=createChart(
-    weightLogs.map(item=>item.month),
-    weightLogs.map(item=>item.weight)
-  );
+    datasets: [
+      {
+        data: weightLogs.map((item) => Number(item.weight)),
 
+        strokeWidth: 4,
 
-  const calorieChart=createChart(
-    nutritionLogs.map(item=>item.date),
-    nutritionLogs.map(item=>item.calories)
-  );
+        color: () => colors.progress,
 
+        fillShadowGradient: colors.card,
+        fillShadowGradientOpacity: 0,
+      },
+    ],
+  };
+  const nutritionChart = {
+    labels: nutritionLogs.length
+      ? nutritionLogs.map((item) => item.date)
+      : ["No Data"],
 
-  const proteinChart=createChart(
-    nutritionLogs.map(item=>item.date),
-    nutritionLogs.map(item=>item.protein)
-  );
+    datasets: [
+      {
+        data: nutritionLogs.length
+          ? nutritionLogs.map((item) => Number(item.calories) || 0)
+          : [0],
+        color: () => "#FF5252", // Calories - Red
+        strokeWidth: 3,
+      },
 
+      {
+        data: nutritionLogs.length
+          ? nutritionLogs.map((item) => Number(item.protein) || 0)
+          : [0],
+        color: () => "#4CAF50", // Protein - Green
+        strokeWidth: 3,
+      },
 
-  const carbsChart=createChart(
-    nutritionLogs.map(item=>item.date),
-    nutritionLogs.map(item=>item.carbs)
-  );
+      {
+        data: nutritionLogs.length
+          ? nutritionLogs.map((item) => Number(item.carbs) || 0)
+          : [0],
+        color: () => "#2196F3", // Carbs - Blue
+        strokeWidth: 3,
+      },
 
+      {
+        data: nutritionLogs.length
+          ? nutritionLogs.map((item) => Number(item.fat) || 0)
+          : [0],
+        color: () => "#FFC107", // Fat - Yellow
+        strokeWidth: 3,
+      },
+    ],
 
-  const fatChart=createChart(
-    nutritionLogs.map(item=>item.date),
-    nutritionLogs.map(item=>item.fat)
-  );
-const renderGraph = (
-  title: string,
-  data: any,
-  suffix: string
-) => (
-  <View style={styles.card}>
+    legend: ["Calories", "Protein", "Carbs", "Fat"],
+  };
 
-    <Text style={styles.title}>
-      {title}
-    </Text>
+  function renderGraph(
+    title: string,
 
-    <LineChart
-      data={data}
+    data: any,
 
-      width={width - 70}
+    suffix: string,
+  ) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.title}>{title}</Text>
 
-      height={220}
+        <LineChart
+          data={data}
+          width={width - 70}
+          height={220}
+          yAxisSuffix={suffix}
+          bezier
+          withInnerLines={false}
+          withOuterLines={false}
+          withVerticalLines={false}
+          withHorizontalLines={false}
+          withShadow={false}
+          withDots={true}
+          chartConfig={{
+            backgroundGradientFrom: colors.card,
+            backgroundGradientTo: colors.card,
 
-      yAxisSuffix={suffix}
+            decimalPlaces: 1,
 
-      bezier
+            color: (opacity = 1) => `rgba(75,201,169,${opacity})`,
 
-      chartConfig={{
-        backgroundGradientFrom: theme.card,
+            labelColor: () => colors.secondaryText,
 
-        backgroundGradientTo: theme.card,
+            propsForDots: {
+              r: "5",
+              strokeWidth: "2",
+              stroke: colors.progress,
+              fill: colors.progress,
+            },
 
-        decimalPlaces: 1,
+            // Remove graph fill
+            fillShadowGradient: colors.card,
+            fillShadowGradientOpacity: 0,
+          }}
+          style={{
+            borderRadius: 16,
+          }}
+        />
+      </View>
+    );
+  }
 
-        color: (opacity = 1) =>
-          `rgba(245,158,11,${opacity})`,
+  return (
+    <View style={styles.container}>
+      {/* Header */}
 
-        labelColor: () =>
-          theme.secondaryText,
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={26} color={colors.text} />
+        </TouchableOpacity>
 
-        propsForDots: {
-          r: "5",
-          strokeWidth: "2",
-          stroke: "#F59E0B",
-        },
-      }}
+        <Text style={styles.headerTitle}>Progress</Text>
 
-      style={{
-        borderRadius: 16,
-      }}
-    />
+        <View style={{ width: 40 }} />
+      </View>
 
-  </View>
-);
+      <ScrollView contentContainerStyle={styles.content}>
+        {renderGraph(
+          "Weight Progress",
 
-  return(
-    <ScrollView style={styles.container}>
+          weightChart,
 
-      {renderGraph(
-        "Weight Progress",
-        weightChart,
-        " kg"
-      )}
-
-      {renderGraph(
-        "Calories",
-        calorieChart,
-        " kcal"
-      )}
-
-      {renderGraph(
-        "Protein",
-        proteinChart,
-        " g"
-      )}
-
-      {renderGraph(
-        "Carbs",
-        carbsChart,
-        " g"
-      )}
-
-      {renderGraph(
-        "Fat",
-        fatChart,
-        " g"
-      )}
-
-    </ScrollView>
+          " kg",
+        )}
+        {renderGraph("Nutrition Progress", nutritionChart, "")}{" "}
+      </ScrollView>
+    </View>
   );
 }

@@ -1,3 +1,4 @@
+import { useTheme } from "@/context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { router } from "expo-router";
@@ -8,7 +9,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 import {
@@ -20,742 +21,381 @@ import { Ionicons } from "@expo/vector-icons";
 
 import BASE_URL from "@/storage/ipAdress";
 export default function VoiceFoodLoggerScreen() {
-const finalTranscriptRef = useRef("");
-const transcriptRef = useRef("");
+  const finalTranscriptRef = useRef("");
+  const transcriptRef = useRef("");
   const [isListening, setIsListening] = useState(false);
 
   const [transcript, setTranscript] = useState("");
 
   const [loading, setLoading] = useState(false);
 
-    
-
-
-
   useEffect(() => {
-
-
-    async function setup(){
-
+    async function setup() {
       const permission =
         await ExpoSpeechRecognitionModule.requestPermissionsAsync();
 
-
-      console.log(
-        "Speech permission",
-        permission
-      );
-
+      console.log("Speech permission", permission);
     }
 
-
     setup();
-
-
   }, []);
-
-
-
 
   /*
     Live speech updates
   */
+  const { colors } = useTheme();
 
-useSpeechRecognitionEvent(
-  "result",
-  (event) => {
-
-    const result =
-      event.results?.[0];
-
+  const styles = createStyles(colors);
+  useSpeechRecognitionEvent("result", (event) => {
+    const result = event.results?.[0];
 
     if (!result) return;
 
-
-    const text =
-      result.transcript;
-
+    const text = result.transcript;
 
     if (text) {
-
       if (result.isFinal) {
-
         // Save confirmed speech
         finalTranscriptRef.current =
           `${finalTranscriptRef.current} ${text}`.trim();
 
-
-        setTranscript(
-          finalTranscriptRef.current
-        );
-
-
+        setTranscript(finalTranscriptRef.current);
       } else {
-
         // Show live temporary speech
-        setTranscript(
-          `${finalTranscriptRef.current} ${text}`.trim()
-        );
-
+        setTranscript(`${finalTranscriptRef.current} ${text}`.trim());
       }
-
     }
-
-  }
-);
-
-
-
-
-  useSpeechRecognitionEvent(
-    "end",
-    ()=>{
-
-      setIsListening(false);
-
-
-      if(transcript){
-
-        sendToBackend(transcript);
-
-      }
-
-    }
-  );
-
-
-useSpeechRecognitionEvent(
-  "error",
-  (event) => {
-
-    console.log(
-      "Speech recognition error:",
-      event
-    );
-
-    setIsListening(false);
-
-  }
-);
-
- const startListening = async()=>{
-
-  finalTranscriptRef.current = "";
-
-  setTranscript("");
-
-  await ExpoSpeechRecognitionModule.start({
-    lang:"en-US",
-    interimResults:true,
-    continuous:true,
   });
 
-  setIsListening(true);
-
-};
-
-
-
-
-  const stopListening = async()=>{
-
-
-    await ExpoSpeechRecognitionModule.stop();
-
-
+  useSpeechRecognitionEvent("end", () => {
     setIsListening(false);
 
-
-  };
-
-
-
-
-  const sendToBackend = async (text: string) => {
-
-  try {
-
-    setLoading(true);
-
-
-    const userid = await AsyncStorage.getItem("userid");
-
-console.log("User ID:", userid);
-    if (!userid) {
-      console.log("User ID not found");
-      return;
+    if (transcript) {
+      sendToBackend(transcript);
     }
+  });
 
+  useSpeechRecognitionEvent("error", (event) => {
+    console.log("Speech recognition error:", event);
 
-    const response = await axios.post(
+    setIsListening(false);
+  });
 
-      `${BASE_URL}/analyze-food`,
+  const startListening = async () => {
+    finalTranscriptRef.current = "";
 
-      {
-        foodName: text,
-        userid: userid,
-      },
+    setTranscript("");
 
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-
-    );
-
-
-    console.log(
-      "Food Analysis Response:",
-      response.data
-    );
-
-
-    router.push({
-      pathname: "/foodresult",
-      params: {
-        image: "",
-        result: JSON.stringify(response.data),
-      },
+    await ExpoSpeechRecognitionModule.start({
+      lang: "en-US",
+      interimResults: true,
+      continuous: true,
     });
 
+    setIsListening(true);
+  };
 
-  }
-  catch(error:any){
+  const stopListening = async () => {
+    await ExpoSpeechRecognitionModule.stop();
 
-    console.log(
-      "Backend error",
-      error.response?.data || error.message
-    );
+    setIsListening(false);
+  };
 
-  }
-  finally{
+  const sendToBackend = async (text: string) => {
+    try {
+      setLoading(true);
 
-    setLoading(false);
+      const userid = await AsyncStorage.getItem("userid");
 
-  }
+      console.log("User ID:", userid);
+      if (!userid) {
+        console.log("User ID not found");
+        return;
+      }
 
-};
+      const response = await axios.post(
+        `${BASE_URL}/analyze-food`,
 
+        {
+          foodName: text,
+          userid: userid,
+        },
 
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
 
+      console.log("Food Analysis Response:", response.data);
+
+      router.push({
+        pathname: "/foodresult",
+        params: {
+          image: "",
+          result: JSON.stringify(response.data),
+        },
+      });
+    } catch (error: any) {
+      console.log("Backend error", error.response?.data || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-
     <View style={styles.container}>
-
-
       <View style={styles.overlay}>
-
-
         {/* Header */}
 
-
         <View style={styles.header}>
-
-
-          <TouchableOpacity
-            style={styles.iconButton}
-          >
-
+          <TouchableOpacity style={styles.iconButton}>
             <Ionicons
               name="volume-mute-outline"
               size={28}
-              color="white"
+              color={colors.text}
             />
-
           </TouchableOpacity>
 
+          <Text style={styles.title}>Voice Food Logger</Text>
 
-
-          <Text style={styles.title}>
-            Voice Food Logger
-          </Text>
-
-
-
-          <TouchableOpacity
-            style={styles.iconButton}
-          >
-
+          <TouchableOpacity style={styles.iconButton}>
             <Ionicons
-              name="restaurant-outline"
+              name="volume-mute-outline"
               size={28}
-              color="white"
+              color={colors.text}
             />
-
           </TouchableOpacity>
-
-
         </View>
-
-
-
-
-
 
         {/* Text Area */}
 
-
         <View style={styles.center}>
-
-
           <View style={styles.textBox}>
-
-
-            <Text style={styles.textTitle}>
-              Tell me what you ate
-            </Text>
-
-
+            <Text style={styles.textTitle}>Tell me what you ate</Text>
 
             <ScrollView>
-
-
               <Text style={styles.transcript}>
-
-
-                {transcript ||
-                "Your speech will appear here..."}
-
-
+                {transcript || "Your speech will appear here..."}
               </Text>
-
-
             </ScrollView>
-
-
           </View>
 
-
-
-
           <TouchableOpacity
-
-            style={[
-              styles.micButton,
-              isListening &&
-              styles.activeMic
-            ]}
-
-
-            onPress={
-              isListening
-              ?
-              stopListening
-              :
-              startListening
-            }
-
+            style={[styles.micButton, isListening && styles.activeMic]}
+            onPress={isListening ? stopListening : startListening}
           >
-
-
             <Ionicons
-
-              name={
-                isListening
-                ?
-                "stop"
-                :
-                "mic"
-              }
-
+              name={isListening ? "stop" : "mic"}
               size={50}
-
-              color="black"
-
+              color={colors.text}
             />
-
-
           </TouchableOpacity>
 
-
-
-
           <Text style={styles.status}>
-
-
-            {
-              isListening
-              ?
-              "Listening..."
-              :
-              "Tap microphone to speak"
-            }
-
-
+            {isListening ? "Listening..." : "Tap microphone to speak"}
           </Text>
-
-
-
         </View>
-
-
-
-
-
       </View>
 
-
-
-
-
-
-
-      {
-        loading &&
-
+      {loading && (
         <View style={styles.loading}>
+          <ActivityIndicator size="large" color={colors.primary} />
 
-
-          <ActivityIndicator
-
-            size="large"
-
-            color="#FF8C00"
-
-          />
-
-
-          <Text style={styles.loadingText}>
-            Processing food...
-          </Text>
-
-
+          <Text style={styles.loadingText}>Processing food...</Text>
         </View>
-
-      }
-
-
-
-
-
-
-
-
+      )}
 
       {/* Backend Result */}
-
-
-
-      
-
-
-
-
-
-
     </View>
-
   );
-
 }
 
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
 
+    overlay: {
+      flex: 1,
+      backgroundColor: colors.overlay || "rgba(0,0,0,0.55)",
+    },
 
+    header: {
+      marginTop: 60,
+      paddingHorizontal: 20,
 
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
 
-const styles = StyleSheet.create({
+    title: {
+      color: colors.text,
+      fontSize: 26,
+      fontWeight: "700",
+    },
 
+    iconButton: {
+      width: 60,
+      height: 60,
 
-container:{
+      borderRadius: 30,
 
- flex:1,
+      backgroundColor: colors.card,
 
- backgroundColor:"#000",
+      justifyContent: "center",
+      alignItems: "center",
+    },
 
-},
+    center: {
+      flex: 1,
 
+      justifyContent: "center",
 
+      alignItems: "center",
 
-overlay:{
+      paddingHorizontal: 20,
+    },
 
- flex:1,
+    textBox: {
+      width: "100%",
+      height: 250,
 
- backgroundColor:"rgba(0,0,0,0.55)"
+      borderWidth: 2,
 
-},
+      borderColor: colors.primary,
 
+      borderRadius: 25,
 
+      padding: 20,
 
+      backgroundColor: colors.card,
+    },
 
-header:{
+    textTitle: {
+      color: colors.primary,
 
+      fontSize: 22,
 
- marginTop:60,
+      fontWeight: "700",
 
- paddingHorizontal:20,
+      marginBottom: 20,
+    },
 
- flexDirection:"row",
+    transcript: {
+      color: colors.text,
 
- justifyContent:"space-between",
+      fontSize: 20,
 
- alignItems:"center"
+      lineHeight: 30,
+    },
 
-},
+    micButton: {
+      marginTop: 50,
 
+      width: 100,
 
+      height: 100,
 
+      borderRadius: 50,
 
-title:{
+      backgroundColor: colors.card,
 
+      justifyContent: "center",
 
- color:"white",
+      alignItems: "center",
 
- fontSize:26,
+      shadowColor: colors.primary,
 
- fontWeight:"700"
+      shadowOpacity: 0.25,
 
+      shadowRadius: 10,
 
-},
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
 
+      elevation: 5,
+    },
 
+    activeMic: {
+      backgroundColor: colors.primary,
+    },
 
-iconButton:{
+    status: {
+      marginTop: 20,
 
+      color: colors.text,
 
- width:60,
+      fontSize: 18,
+    },
 
- height:60,
+    loading: {
+      ...StyleSheet.absoluteFill,
 
- borderRadius:30,
+      backgroundColor: "rgba(0,0,0,0.7)",
 
- backgroundColor:"#333",
+      justifyContent: "center",
 
- justifyContent:"center",
+      alignItems: "center",
+    },
 
- alignItems:"center"
+    loadingText: {
+      color: "#fff",
 
+      marginTop: 15,
 
-},
+      fontSize: 18,
+    },
 
+    modal: {
+      flex: 1,
 
+      padding: 25,
 
+      backgroundColor: colors.background,
+    },
 
+    resultTitle: {
+      fontSize: 28,
 
-center:{
+      fontWeight: "bold",
 
+      marginBottom: 20,
 
- flex:1,
+      color: colors.text,
+    },
 
- justifyContent:"center",
+    resultText: {
+      fontSize: 16,
 
- alignItems:"center",
+      lineHeight: 24,
 
- paddingHorizontal:20
+      color: colors.text,
+    },
 
+    closeButton: {
+      marginTop: 30,
 
-},
+      backgroundColor: colors.primary,
 
+      padding: 15,
 
+      borderRadius: 15,
+    },
 
+    closeText: {
+      color: colors.buttonText,
 
+      textAlign: "center",
 
-textBox:{
+      fontSize: 18,
 
-
- width:"100%",
-
- height:250,
-
- borderWidth:2,
-
- borderColor:"#FF8C00",
-
- borderRadius:25,
-
- padding:20,
-
- backgroundColor:"#111"
-
-
-},
-
-
-
-textTitle:{
-
-
- color:"#FF8C00",
-
- fontSize:22,
-
- fontWeight:"700",
-
- marginBottom:20
-
-
-},
-
-
-
-transcript:{
-
-
- color:"white",
-
- fontSize:20,
-
- lineHeight:30
-
-
-},
-
-
-
-
-micButton:{
-
-
- marginTop:50,
-
- width:100,
-
- height:100,
-
- borderRadius:50,
-
- backgroundColor:"white",
-
- justifyContent:"center",
-
- alignItems:"center"
-
-
-},
-
-
-
-activeMic:{
-
-
- backgroundColor:"#FF8C00"
-
-
-},
-
-
-
-
-status:{
-
-
- marginTop:20,
-
- color:"white",
-
- fontSize:18
-
-
-},
-
-
-
-
-loading:{
-
-
- ...StyleSheet.absoluteFill,
-
- backgroundColor:"rgba(0,0,0,0.7)",
-
- justifyContent:"center",
-
- alignItems:"center"
-
-
-},
-
-
-
-loadingText:{
-
-
- color:"white",
-
- marginTop:15,
-
- fontSize:18
-
-
-},
-
-
-
-
-modal:{
-
-
- flex:1,
-
- padding:25,
-
- backgroundColor:"white"
-
-
-},
-
-
-
-resultTitle:{
-
-
- fontSize:28,
-
- fontWeight:"bold",
-
- marginBottom:20
-
-
-},
-
-
-
-
-resultText:{
-
-
- fontSize:16,
-
- lineHeight:24
-
-
-},
-
-
-
-
-closeButton:{
-
-
- marginTop:30,
-
- backgroundColor:"#FF8C00",
-
- padding:15,
-
- borderRadius:15
-
-
-},
-
-
-
-
-closeText:{
-
-
- color:"white",
-
- textAlign:"center",
-
- fontSize:18,
-
- fontWeight:"700"
-
-
-}
-
-
-
-});
+      fontWeight: "700",
+    },
+  });

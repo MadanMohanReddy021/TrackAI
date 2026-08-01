@@ -1,12 +1,7 @@
-import api from "./api";
+import apis from "./apis";
 
 export async function saveMeal(data: any) {
-
-  const response = await api.post(
-    "/meals",
-    data
-  );
+  const response = await apis.post("/meals", data);
 
   return response.data;
-
 }
