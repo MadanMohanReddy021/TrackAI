@@ -4,36 +4,43 @@ import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { useTheme } from "../context/ThemeContext";
+import { createStyles } from "../styles/notificationStyles";
 const STORAGE_KEY = "@notification_settings";
 
 export default function NotificationScreen() {
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
+
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const defaultSettings = {
-  enabled: true,
+    enabled: true,
 
-  breakfastEnabled: true,
-  breakfastTime: "08:00",
+    breakfastEnabled: true,
+    breakfastTime: "08:00",
 
-  lunchEnabled: true,
-  lunchTime: "13:00",
+    lunchEnabled: true,
+    lunchTime: "13:00",
 
-  dinnerEnabled: true,
-  dinnerTime: "20:00",
+    dinnerEnabled: true,
+    dinnerTime: "20:00",
 
-  endDayEnabled: true,
-  endDayTime: "22:00",
-};
+    endDayEnabled: true,
+    endDayTime: "22:00",
+  };
 
   const [settings, setSettings] = useState({
     enabled: true,
@@ -53,137 +60,129 @@ export default function NotificationScreen() {
 
   useEffect(() => {
     fetchSettings();
-     requestPermission();
+    requestPermission();
   }, []);
   const scheduleNotifications = async (settings: any) => {
-  await Notifications.cancelAllScheduledNotificationsAsync();
+    await Notifications.cancelAllScheduledNotificationsAsync();
 
-  if (!settings.enabled) return;
+    if (!settings.enabled) return;
 
-  const schedule = async (
-    title: string,
-    body: string,
-    time: string
-  ) => {
-    const [hour, minute] = time.split(":").map(Number);
+    const schedule = async (title: string, body: string, time: string) => {
+      const [hour, minute] = time.split(":").map(Number);
 
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour,
-        minute,
-      },
-    });
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        },
+      });
+    };
+
+    if (settings.breakfastEnabled) {
+      await schedule(
+        "🍳 Breakfast Time",
+        "Don't forget to log your breakfast.",
+        settings.breakfastTime,
+      );
+    }
+
+    if (settings.lunchEnabled) {
+      await schedule(
+        "🍱 Lunch Time",
+        "Time to enjoy your lunch.",
+        settings.lunchTime,
+      );
+    }
+
+    if (settings.dinnerEnabled) {
+      await schedule(
+        "🍽 Dinner Time",
+        "Remember to log your dinner.",
+        settings.dinnerTime,
+      );
+    }
+
+    if (settings.endDayEnabled) {
+      await schedule(
+        "🌙 End of Day",
+        "Complete today's nutrition summary.",
+        settings.endDayTime,
+      );
+    }
+  };
+  const requestPermission = async () => {
+    const { status } = await Notifications.requestPermissionsAsync();
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Required",
+        "Enable notifications to receive reminders.",
+      );
+    }
+  };
+  const fetchSettings = async () => {
+    try {
+      const value = await AsyncStorage.getItem(STORAGE_KEY);
+
+      if (value) {
+        setSettings(JSON.parse(value));
+      } else {
+        setSettings(defaultSettings);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (settings.breakfastEnabled) {
-    await schedule(
-      "🍳 Breakfast Time",
-      "Don't forget to log your breakfast.",
-      settings.breakfastTime
-    );
-  }
+  const saveSettings = async () => {
+    console.log("1");
 
-  if (settings.lunchEnabled) {
-    await schedule(
-      "🍱 Lunch Time",
-      "Time to enjoy your lunch.",
-      settings.lunchTime
-    );
-  }
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 
-  if (settings.dinnerEnabled) {
-    await schedule(
-      "🍽 Dinner Time",
-      "Remember to log your dinner.",
-      settings.dinnerTime
-    );
-  }
+    console.log("2");
 
-  if (settings.endDayEnabled) {
-    await schedule(
-      "🌙 End of Day",
-      "Complete today's nutrition summary.",
-      settings.endDayTime
-    );
-  }
-};
-const requestPermission = async () => {
-  const { status } =
-    await Notifications.requestPermissionsAsync();
+    await scheduleNotifications(settings);
 
-  if (status !== "granted") {
-    Alert.alert(
-      "Permission Required",
-      "Enable notifications to receive reminders."
-    );
-  }
-};
- const fetchSettings = async () => {
-  try {
-    const value = await AsyncStorage.getItem(STORAGE_KEY);
+    console.log("3");
 
-    if (value) {
-      setSettings(JSON.parse(value));
-    } else {
-      setSettings(defaultSettings);
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+    Alert.alert("Saved");
 
- const saveSettings = async () => {
-  console.log("1");
-
-  await AsyncStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(settings)
-  );
-
-  console.log("2");
-
-  await scheduleNotifications(settings);
-
-  console.log("3");
-
-  Alert.alert("Saved");
-
-  setEditing(false);
-};
+    setEditing(false);
+  };
 
   const ReminderRow = (
     title: string,
     toggleKey: keyof typeof settings,
     timeKey: keyof typeof settings,
-    icon: keyof typeof Ionicons.glyphMap
+    icon: keyof typeof Ionicons.glyphMap,
   ) => (
     <View style={styles.card}>
       <View style={styles.row}>
         <View style={styles.left}>
-          <Ionicons name={icon} size={22} color="#000" />
+          <Ionicons name={icon} size={22} color={colors.text} />
           <Text style={styles.title}>{title}</Text>
         </View>
 
         <Switch
           disabled={!editing}
-          value={settings[toggleKey] as boolean}
-          onValueChange={(value) =>
-            setSettings({ ...settings, [toggleKey]: value })
-          }
+          value={settings.enabled}
+          trackColor={{
+            false: colors.border,
+            true: colors.primary,
+          }}
+          thumbColor={colors.card}
         />
       </View>
 
       <TextInput
         editable={editing}
         value={settings[timeKey] as string}
-        onChangeText={(text) =>
-          setSettings({ ...settings, [timeKey]: text })
-        }
+        onChangeText={(text) => setSettings({ ...settings, [timeKey]: text })}
         placeholder="08:00"
         style={styles.timeInput}
       />
@@ -199,155 +198,90 @@ const requestPermission = async () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Notifications</Text>
-        </View>
-
-        <TouchableOpacity
-  onPress={() => {
-    console.log("Button pressed");
-
-    if (editing) {
-      console.log("Saving...");
-      saveSettings();
-    } else {
-      console.log("Editing enabled");
-      setEditing(true);
-    }
-  }}
->
-  <Ionicons
-    name={editing ? "checkmark" : "create-outline"}
-    size={26}
-    color="#000"
-  />
-</TouchableOpacity>
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.row}>
-          <View style={styles.left}>
-            <Ionicons
-              name="notifications-outline"
-              size={22}
-              color="#000"
-            />
-
-            <Text style={styles.title}>
-              Allow Notifications
-            </Text>
+            <Text style={styles.headerTitle}>Notifications</Text>
           </View>
 
-          <Switch
-            disabled={!editing}
-            value={settings.enabled}
-            onValueChange={(value) =>
-              setSettings({ ...settings, enabled: value })
-            }
-          />
+          <TouchableOpacity
+            onPress={() => {
+              console.log("Button pressed");
+
+              if (editing) {
+                console.log("Saving...");
+                saveSettings();
+              } else {
+                console.log("Editing enabled");
+                setEditing(true);
+              }
+            }}
+          >
+            <Ionicons
+              name={editing ? "checkmark" : "create-outline"}
+              size={26}
+              color={colors.text}
+            />
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {ReminderRow(
-        "Breakfast",
-        "breakfastEnabled",
-        "breakfastTime",
-        "cafe-outline"
-      )}
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <View style={styles.left}>
+              <Ionicons
+                name="notifications-outline"
+                size={22}
+                color={colors.text}
+              />
 
-      {ReminderRow(
-        "Lunch",
-        "lunchEnabled",
-        "lunchTime",
-        "restaurant-outline"
-      )}
+              <Text style={styles.title}>Allow Notifications</Text>
+            </View>
 
-      {ReminderRow(
-        "Dinner",
-        "dinnerEnabled",
-        "dinnerTime",
-        "moon-outline"
-      )}
+            <Switch
+              disabled={!editing}
+              value={settings.enabled}
+              onValueChange={(value) =>
+                setSettings({ ...settings, enabled: value })
+              }
+            />
+          </View>
+        </View>
 
-      {ReminderRow(
-        "End of Day",
-        "endDayEnabled",
-        "endDayTime",
-        "bed-outline"
-      )}
-    </ScrollView>
+        {ReminderRow(
+          "Breakfast",
+          "breakfastEnabled",
+          "breakfastTime",
+          "cafe-outline",
+        )}
+
+        {ReminderRow(
+          "Lunch",
+          "lunchEnabled",
+          "lunchTime",
+          "restaurant-outline",
+        )}
+
+        {ReminderRow("Dinner", "dinnerEnabled", "dinnerTime", "moon-outline")}
+
+        {ReminderRow(
+          "End of Day",
+          "endDayEnabled",
+          "endDayTime",
+          "bed-outline",
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-  },
-
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  header: {
-    marginTop: 60,
-    marginBottom: 25,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginLeft: 12,
-  },
-
-  card: {
-    backgroundColor: "#F7F7F7",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
-  },
-
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  left: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  title: {
-    marginLeft: 12,
-    fontSize: 17,
-    fontWeight: "600",
-  },
-
-  timeInput: {
-    marginTop: 15,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-  },
-});

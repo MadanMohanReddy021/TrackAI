@@ -191,8 +191,10 @@ export default function FoodScannerScreen() {
       {/* Loading */}
 
       {loading && (
-        <View style={styles.loading}>
+        <View style={styles.analyzingScreen}>
           <ActivityIndicator size="large" color="white" />
+
+          <Text style={styles.loadingText}>Analyzing your food...</Text>
         </View>
       )}
 
@@ -218,6 +220,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  analyzingScreen: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 15,
   },
 
   title: {

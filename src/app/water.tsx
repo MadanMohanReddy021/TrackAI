@@ -1,15 +1,16 @@
+import BASE_URL from "@/storage/ipAdress";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 // Replace with your theme hook
@@ -28,12 +29,12 @@ const WATER_TARGET = 2500;
 
 // Replace with your backend API
 async function addWater(userid: string, date: string, amount: number) {
-  const res = await fetch("YOUR_BACKEND_URL/add-water", {
+  const res = await fetch(`${BASE_URL}/add-water-intake`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       userid,
-      date,
+      intake_date: date,
       water_ml: amount,
     }),
   });

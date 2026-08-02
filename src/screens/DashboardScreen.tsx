@@ -8,19 +8,19 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import { readRecords } from "react-native-health-connect";
 import AddMenu from "../components/dashboard/AddMenu";
 import CalorieCard from "../components/dashboard/CalorieCard";
-import FoodLogItem from "../components/dashboard/FoodLogItem";
 import MacroCard from "../components/dashboard/MacroCard";
 import { useTheme } from "../context/ThemeContext";
 import { createStyles } from "../styles/dashboardStyles";
 import { DarkTheme, LightTheme } from "../theme/colors";
+import FoodLogItem from "./FoodLogItem";
 
 import {
-  addWaterIntake,
   getFoodLogs,
   getNutrients,
   getProfile,
@@ -58,6 +58,8 @@ type Profile = {
   calories: number | string;
 
   protein: number | string;
+  fiber: number | string;
+  sugar: number | string;
 
   carbs: number | string;
 
@@ -92,33 +94,26 @@ type FoodLog = {
 };
 
 const DashboardScreen = () => {
+  const [steps, setSteps] = useState(0);
   //----------------Add water-------------------------------------------------------------------------------------------
-  const handleAddWater = async (amount: number) => {
-    try {
-      const userid = await AsyncStorage.getItem("userid");
 
-      if (!userid) {
-        Alert.alert("Error", "User not found");
-        return;
-      }
-
-      const intake_date = new Date().toISOString().split("T")[0];
-
-      await addWaterIntake(userid, intake_date, amount);
-
-      setWater((prev) => prev + amount);
-    } catch (error: any) {
-      Alert.alert("Error", error.message ?? "Failed to add water");
-    }
-  };
   //----------------------------------------------------------------------------------------------------------------
   //---------------- THEME ----------------
 
   const { theme } = useTheme();
 
-  const colors = theme === "dark" ? DarkTheme : LightTheme;
+  const systemTheme = useColorScheme();
 
-  const styles = createStyles(colors);
+  const colors =
+    theme === "system"
+      ? systemTheme === "dark"
+        ? DarkTheme
+        : LightTheme
+      : theme === "dark"
+        ? DarkTheme
+        : LightTheme;
+
+  const styles = useMemo(() => createStyles(colors), [colors]);
   // ---------------- STATES ----------------
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -135,7 +130,6 @@ const DashboardScreen = () => {
 
   const [profileName, setProfileName] = useState("");
 
-  const [steps, setSteps] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0],
@@ -275,11 +269,12 @@ const DashboardScreen = () => {
           },
         });
 
-        let totalSteps = 0;
+        const totalSteps = result.records.reduce(
+          (sum, record) => sum + record.count,
+          0,
+        );
 
-        result.records.forEach((record) => {
-          totalSteps += record.count;
-        });
+        setSteps(totalSteps);
 
         console.log("Today's steps:", totalSteps);
 
@@ -316,10 +311,15 @@ const DashboardScreen = () => {
         getSteps(userid, date),
       ]);
 
+      if (!profile?.data || !profile.data.userid) {
+        router.replace("/onboarding");
+        return;
+      }
+
       setProfile(profile.data);
       setLogs(foodLogs);
       setWater(water);
-      setSteps(steps);
+      //setSteps(steps);
 
       try {
         const item = nutrientsResponse.data[0];
@@ -462,10 +462,22 @@ const DashboardScreen = () => {
               {
                 backgroundColor: colors.card,
                 borderColor: colors.border,
+                overflow: "hidden",
               },
             ]}
             onPress={() => router.push("/water")}
           >
+            {/* Water Fill */}
+            <View
+              style={[
+                styles.waterFill,
+                {
+                  height: `${Math.min((water / waterTarget) * 100, 100)}%`,
+                  backgroundColor: colors.waterfill,
+                },
+              ]}
+            />
+
             <MaterialCommunityIcons
               name="cup-water"
               size={36}
@@ -491,7 +503,7 @@ const DashboardScreen = () => {
                 },
               ]}
             >
-              {waterTarget / 1000}L/{waterTarget} ml
+              {(waterTarget / 1000).toFixed(2)}L/{waterTarget} ml
             </Text>
           </TouchableOpacity>
         </View>

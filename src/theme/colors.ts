@@ -8,12 +8,12 @@ export const LightTheme = {
   shadow: "#2d2921",
   dateSelected: "#0d0a02d1",
   dateBorder: "#E5E7EB",
-
+  date: "#0000000",
   progress: "#322b1f",
   button: "#151005",
   buttonText: "#FFFFFF",
   progressBackground: "#dcd6d6",
-
+  waterfill: "#00BFFF",
   danger: "#DC2626",
   dangerBackground: "#FEF2F2",
   dangerBorder: "#FECACA",
@@ -25,15 +25,15 @@ export const DarkTheme = {
   card: "#1E1E1E",
   primary: "#edf5f2",
   text: "#FFFFFF",
-  secondaryText: "#B3B3B3",
+  secondaryText: "#d2cfcf",
   border: "#333333",
-
-  dateSelected: "#44997e",
+  waterfill: "#00BFFF",
+  dateSelected: "#6da493",
   dateBorder: "#333333",
-
-  progress: "#4bc9a9",
-  button: "#2e9171bb",
-  buttonText: "#FFFFFF",
+  date: "#0000000",
+  progress: "#85c4b4",
+  button: "#feffff",
+  buttonText: "#010000",
   shadow: "#000000",
   progressBackground: "#000000",
 

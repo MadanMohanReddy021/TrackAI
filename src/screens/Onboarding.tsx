@@ -3,7 +3,15 @@ import BASE_URL from "@/storage/ipAdress";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import ProgressBar from "../components/onboarding/ProgressBar";
 import Step0 from "../components/onboarding/Step0";
@@ -222,111 +230,123 @@ const OnboardingScreen = () => {
     }
   };
   return (
-    <View style={styles.container}>
-      {/* TOP HEADER */}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.container}>
+          {/* TOP HEADER */}
 
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={back}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={back}>
+              <Text style={styles.backText}>←</Text>
+            </TouchableOpacity>
 
-        <Text style={styles.stepText}>
-          Step {step} / {TOTAL_STEPS}
-        </Text>
+            <Text style={styles.stepText}>
+              Step {step} / {TOTAL_STEPS}
+            </Text>
 
-        <View style={{ width: 40 }} />
-      </View>
+            <View style={{ width: 40 }} />
+          </View>
 
-      {/* PROGRESS BAR */}
+          {/* PROGRESS BAR */}
 
-      <ProgressBar step={step} totalSteps={TOTAL_STEPS} />
+          <ProgressBar step={step} totalSteps={TOTAL_STEPS} />
 
-      {/* CONTENT */}
+          {/* CONTENT */}
 
-      <View style={styles.content}>
-        {step === 0 && <Step0 gender={gender} setGender={setGender} />}
+          <View style={styles.content}>
+            {step === 0 && <Step0 gender={gender} setGender={setGender} />}
 
-        {step === 1 && (
-          <Step1
-            name={name}
-            age={age}
-            height={height}
-            weight={weight}
-            setName={setName}
-            setAge={setAge}
-            setHeight={setHeight}
-            setWeight={setWeight}
-            heightUnit={heightUnit}
-            weightUnit={weightUnit}
-            setHeightUnit={setHeightUnit}
-            setWeightUnit={setWeightUnit}
-          />
-        )}
+            {step === 1 && (
+              <Step1
+                name={name}
+                age={age}
+                height={height}
+                weight={weight}
+                setName={setName}
+                setAge={setAge}
+                setHeight={setHeight}
+                setWeight={setWeight}
+                heightUnit={heightUnit}
+                weightUnit={weightUnit}
+                setHeightUnit={setHeightUnit}
+                setWeightUnit={setWeightUnit}
+              />
+            )}
 
-        {step === 2 && (
-          <Step2 goal={goal} setGoal={setGoal} setPace={setPace} />
-        )}
+            {step === 2 && (
+              <Step2 goal={goal} setGoal={setGoal} setPace={setPace} />
+            )}
 
-        {step === 3 && (
-          <Step3
-            goal={goal}
-            weight={weight}
-            target={target}
-            setTarget={setTarget}
-          />
-        )}
+            {step === 3 && (
+              <Step3
+                goal={goal}
+                weight={weight}
+                target={target}
+                setTarget={setTarget}
+              />
+            )}
 
-        {step === 4 && <Step4 activity={activity} setActivity={setActivity} />}
+            {step === 4 && (
+              <Step4 activity={activity} setActivity={setActivity} />
+            )}
 
-        {step === 5 && (
-          <Step5
-            goal={goal}
-            weight={weight}
-            target={target}
-            pace={pace}
-            setPace={setPace}
-          />
-        )}
+            {step === 5 && (
+              <Step5
+                goal={goal}
+                weight={weight}
+                target={target}
+                pace={pace}
+                setPace={setPace}
+              />
+            )}
 
-        {step === 6 && (
-          <Step6
-            summary={summary}
-            name={name}
-            age={age}
-            gender={gender}
-            height={height}
-            weight={weight}
-            target={target}
-            activity={activity}
-            pace={pace}
-            goal={goal}
-            heightUnit={heightUnit}
-            weightUnit={weightUnit}
-            onFinish={() => {
-              Alert.alert("Dashboard", "Navigate to dashboard");
-            }}
-          />
-        )}
-      </View>
+            {step === 6 && (
+              <Step6
+                summary={summary}
+                name={name}
+                age={age}
+                gender={gender}
+                height={height}
+                weight={weight}
+                target={target}
+                activity={activity}
+                pace={pace}
+                goal={goal}
+                heightUnit={heightUnit}
+                weightUnit={weightUnit}
+                onFinish={() => {
+                  Alert.alert("Dashboard", "Navigate to dashboard");
+                }}
+              />
+            )}
+          </View>
 
-      {/* NEXT BUTTON */}
+          {/* NEXT BUTTON */}
 
-      {step < 6 && (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={next}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading
-              ? "Generating Plan..."
-              : step === 5
-                ? "Finish & Generate"
-                : "Continue"}
-          </Text>
-        </TouchableOpacity>
-      )}
-    </View>
+          {step < 6 && (
+            <TouchableOpacity
+              style={styles.button}
+              onPress={next}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading
+                  ? "Generating Plan..."
+                  : step === 5
+                    ? "Finish & Generate"
+                    : "Continue"}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>{" "}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

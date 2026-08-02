@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { readRecords } from "react-native-health-connect";
 
 import { LineChart } from "react-native-chart-kit";
 
@@ -23,6 +24,56 @@ export default function Progress() {
   const { colors } = useTheme();
 
   const styles = createStyles(colors);
+  const [stepLogs, setStepLogs] = useState<any[]>([]);
+  const [stepsPermissionError, setStepsPermissionError] = useState(false);
+  const loadWeeklySteps = async () => {
+    try {
+      const today = new Date();
+
+      const stepsData = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+
+        date.setDate(today.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+
+        const result = await readRecords("Steps", {
+          timeRangeFilter: {
+            operator: "between",
+            startTime: date.toISOString(),
+            endTime: endDate.toISOString(),
+          },
+        });
+
+        const totalSteps = result.records.reduce(
+          (sum, item) => sum + item.count,
+          0,
+        );
+
+        stepsData.push({
+          date: date.toLocaleDateString("en-US", {
+            weekday: "short",
+          }),
+          steps: totalSteps,
+        });
+      }
+
+      const hasSteps = stepsData.some((item) => item.steps > 0);
+
+      if (!hasSteps) {
+        setStepsPermissionError(true);
+      } else {
+        setStepLogs(stepsData);
+      }
+    } catch (error) {
+      console.log("Steps error:", error);
+      setStepsPermissionError(true);
+    }
+  };
 
   const [weightLogs, setWeightLogs] = useState<any[]>([
     {
@@ -135,6 +186,7 @@ export default function Progress() {
 
   useEffect(() => {
     loadProgress();
+    loadWeeklySteps();
   }, []);
 
   const createChart = (labels: any[], values: any[]) => ({
@@ -174,9 +226,7 @@ export default function Progress() {
     ],
   };
   const nutritionChart = {
-    labels: nutritionLogs.length
-      ? nutritionLogs.map((item) => item.date)
-      : ["No Data"],
+    labels: [],
 
     datasets: [
       {
@@ -214,7 +264,19 @@ export default function Progress() {
 
     legend: ["Calories", "Protein", "Carbs", "Fat"],
   };
+  const stepsChart = {
+    labels: stepLogs.map((item) => item.date),
 
+    datasets: [
+      {
+        data: stepLogs.map((item) => item.steps),
+
+        strokeWidth: 3,
+
+        color: () => colors.progress,
+      },
+    ],
+  };
   function renderGraph(
     title: string,
 
@@ -293,6 +355,17 @@ export default function Progress() {
           " kg",
         )}
         {renderGraph("Nutrition Progress", nutritionChart, "")}{" "}
+        {stepsPermissionError ? (
+          <View style={styles.card}>
+            <Text style={styles.title}>Steps unavailable</Text>
+
+            <Text style={styles.secondaryText}>
+              Please check Health Connect permissions
+            </Text>
+          </View>
+        ) : (
+          renderGraph("Weekly Steps", stepsChart, "")
+        )}
       </ScrollView>
     </View>
   );

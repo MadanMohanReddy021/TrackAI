@@ -48,7 +48,7 @@ export const createStyles = (colors: any) =>
     },
 
     mealText: {
-      color: colors.textSecondary,
+      color: colors.secondaryText,
       fontWeight: "600",
     },
 
@@ -123,7 +123,7 @@ export const createStyles = (colors: any) =>
 
     label: {
       fontSize: 16,
-      color: colors.textSecondary,
+      color: colors.secondaryText,
       marginRight: 10,
     },
 
@@ -165,7 +165,7 @@ export const createStyles = (colors: any) =>
     unit: {
       marginLeft: 8,
       fontSize: 15,
-      color: colors.textSecondary,
+      color: colors.secondaryText,
       fontWeight: "600",
     },
 
@@ -174,6 +174,7 @@ export const createStyles = (colors: any) =>
       flexWrap: "wrap",
       justifyContent: "space-between",
       marginTop: 8,
+      color: colors.text,
     },
 
     gridItem: {
@@ -186,12 +187,27 @@ export const createStyles = (colors: any) =>
       borderWidth: 1,
       borderColor: colors.border,
     },
+    gridLabel: {
+      fontSize: 14,
+      color: colors.text,
+      marginTop: 4,
+      fontWeight: "500",
+    },
+    totalLabel: {
+      fontSize: 16,
+      color: colors.text,
+    },
 
+    totalValue: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.text,
+    },
     gridValue: {
       fontSize: 18,
       fontWeight: "700",
-      color: colors.primary,
       marginBottom: 4,
+      color: colors.text,
     },
 
     totalCard: {
@@ -200,7 +216,7 @@ export const createStyles = (colors: any) =>
       marginBottom: 18,
       borderRadius: 22,
       padding: 20,
-
+      color: colors.text,
       borderWidth: 1,
       borderColor: colors.border,
 
@@ -227,6 +243,7 @@ export const createStyles = (colors: any) =>
       flexDirection: "row",
       justifyContent: "space-between",
       marginVertical: 7,
+      color: colors.secondaryText,
     },
 
     actionButton: {

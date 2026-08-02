@@ -57,10 +57,17 @@ export default function Dashboard() {
     [colors],
   );
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+        },
+      ]}
+    >
       <DashboardScreen />
 
-      <View style={[styles.bottomBarContainer, { bottom: insets.bottom + 5 }]}>
+      <View style={[styles.bottomBarContainer, { bottom: insets.bottom + 7 }]}>
         <BlurView
           intensity={80}
           tint={theme === "dark" ? "dark" : "light"}
@@ -74,7 +81,7 @@ export default function Dashboard() {
           />
 
           <TabButton
-            icon={<TrendingUp size={22} color={colors.textSecondary} />}
+            icon={<TrendingUp size={22} color={colors.secondaryText} />}
             label="Progress"
             onPress={() => router.push("/progress")}
           />

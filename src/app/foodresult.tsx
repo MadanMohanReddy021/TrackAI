@@ -7,6 +7,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -215,7 +217,7 @@ export default function FoodResult() {
 
       Alert.alert("Success", "Meal logged successfully!");
 
-      router.replace("/");
+      router.replace("/dashboard");
     } catch (error: any) {
       console.log(error.response?.data || error.message);
 
@@ -274,170 +276,178 @@ export default function FoodResult() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {image ? (
-        <Image source={{ uri: image as string }} style={styles.image} />
-      ) : null}
-
-      <View style={styles.mealContainer}>
-        <Text style={styles.mealTitle}>Select Meal Type</Text>
-
-        <View style={styles.mealOptions}>
-          {["Breakfast", "Lunch", "Dinner", "Snacks"].map((item) => (
-            <TouchableOpacity
-              key={item}
-              style={[
-                styles.mealButton,
-
-                mealType === item && styles.selectedMeal,
-              ]}
-              onPress={() => setMealType(item)}
-            >
-              <Text
-                style={[
-                  styles.mealText,
-
-                  mealType === item && styles.selectedMealText,
-                ]}
-              >
-                {item}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <Text style={styles.heading}>Food Analysis</Text>
-
-      {/* Total Nutrition */}
-      <View style={styles.totalCard}>
-        <Text style={styles.totalTitle}>Total Nutrition</Text>
-
-        <View style={styles.totalRow}>
-          <Text>Calories</Text>
-          <Text>{totals.kcal.toFixed(1)} kcal</Text>
-        </View>
-
-        <View style={styles.totalRow}>
-          <Text>Protein</Text>
-          <Text>{totals.protein.toFixed(1)} g</Text>
-        </View>
-
-        <View style={styles.totalRow}>
-          <Text>Carbs</Text>
-          <Text>{totals.carbs.toFixed(1)} g</Text>
-        </View>
-
-        <View style={styles.totalRow}>
-          <Text>Fat</Text>
-          <Text>{totals.fat.toFixed(1)} g</Text>
-        </View>
-
-        <View style={styles.totalRow}>
-          <Text>Fiber</Text>
-          <Text>{totals.fiber.toFixed(1)} g</Text>
-        </View>
-
-        <View style={styles.totalRow}>
-          <Text>Sugar</Text>
-          <Text>{totals.sugar.toFixed(1)} g</Text>
-        </View>
-      </View>
-
-      {foods.map((food, index) => (
-        <View key={index} style={styles.card}>
-          <Text style={styles.foodName}>{food.name}</Text>
-
-          <View style={styles.servingRow}>
-            <Text style={styles.label}>Serving</Text>
-
-            <View style={styles.quantityContainer}>
-              <TextInput
-                value={food.quantity === 0 ? "" : String(food.quantity)}
-                keyboardType="decimal-pad"
-                style={styles.input}
-                onChangeText={(text) => updateQuantity(index, text)}
-              />
-
-              <Text style={styles.unit}>{food.unit}</Text>
-            </View>
-          </View>
-
-          <View style={styles.grid}>
-            <View style={styles.gridItem}>
-              <Text style={styles.gridValue}>{food.kcal}</Text>
-              <Text>Calories</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridValue}>{food.protein} g</Text>
-              <Text>Protein</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridValue}>{food.carbs} g</Text>
-              <Text>Carbs</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridValue}>{food.fat} g</Text>
-              <Text>Fat</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridValue}>{food.fiber} g</Text>
-              <Text>Fiber</Text>
-            </View>
-
-            <View style={styles.gridItem}>
-              <Text style={styles.gridValue}>{food.sugar} g</Text>
-              <Text>Sugar</Text>
-            </View>
-          </View>
-        </View>
-      ))}
-      <View style={styles.addFoodContainer}>
-        <TextInput
-          placeholder="Add missing food"
-          value={missingFood}
-          onChangeText={setMissingFood}
-          style={styles.addFoodInput}
-        />
-
-        <TouchableOpacity
-          style={styles.addFoodButton}
-          onPress={addMissingFood}
-          disabled={addingFood}
-        >
-          <Text style={styles.actionText}>
-            {addingFood ? "Adding..." : "Add Food"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          margin: 20,
-        }}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
       >
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: "#999" }]}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.actionText}>Scan Again</Text>
-        </TouchableOpacity>
+        {image ? (
+          <Image source={{ uri: image as string }} style={styles.image} />
+        ) : null}
 
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={logMeal}
-          disabled={logging}
+        <View style={styles.mealContainer}>
+          <Text style={styles.mealTitle}>Select Meal Type</Text>
+
+          <View style={styles.mealOptions}>
+            {["Breakfast", "Lunch", "Dinner", "Snacks"].map((item) => (
+              <TouchableOpacity
+                key={item}
+                style={[
+                  styles.mealButton,
+
+                  mealType === item && styles.selectedMeal,
+                ]}
+                onPress={() => setMealType(item)}
+              >
+                <Text
+                  style={[
+                    styles.mealText,
+
+                    mealType === item && styles.selectedMealText,
+                  ]}
+                >
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <Text style={styles.heading}>Food Analysis</Text>
+
+        {/* Total Nutrition */}
+        <View style={styles.totalCard}>
+          <Text style={styles.totalTitle}>Total Nutrition</Text>
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Calories</Text>
+            <Text style={styles.totalValue}>{totals.kcal.toFixed(1)} kcal</Text>
+          </View>
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Protein</Text>
+            <Text style={styles.totalValue}>{totals.protein.toFixed(1)} g</Text>
+          </View>
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Carbs</Text>
+            <Text style={styles.totalValue}>{totals.carbs.toFixed(1)} g</Text>
+          </View>
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Fat</Text>
+            <Text style={styles.totalValue}>{totals.fat.toFixed(1)} g</Text>
+          </View>
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Fiber</Text>
+            <Text style={styles.totalValue}>{totals.fiber.toFixed(1)} g</Text>
+          </View>
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Sugar</Text>
+            <Text style={styles.totalValue}>{totals.sugar.toFixed(1)} g</Text>
+          </View>
+        </View>
+
+        {foods.map((food, index) => (
+          <View key={index} style={styles.card}>
+            <Text style={styles.foodName}>{food.name}</Text>
+
+            <View style={styles.servingRow}>
+              <Text style={styles.label}>Serving</Text>
+
+              <View style={styles.quantityContainer}>
+                <TextInput
+                  value={food.quantity === 0 ? "" : String(food.quantity)}
+                  keyboardType="decimal-pad"
+                  style={styles.input}
+                  onChangeText={(text) => updateQuantity(index, text)}
+                />
+
+                <Text style={styles.unit}>{food.unit}</Text>
+              </View>
+            </View>
+
+            <View style={styles.grid}>
+              <View style={styles.gridItem}>
+                <Text style={styles.gridValue}>{food.kcal}</Text>
+                <Text style={styles.gridLabel}>Calories</Text>
+              </View>
+
+              <View style={styles.gridItem}>
+                <Text style={styles.gridValue}>{food.protein} g</Text>
+                <Text style={styles.gridLabel}>Protein</Text>
+              </View>
+
+              <View style={styles.gridItem}>
+                <Text style={styles.gridValue}>{food.carbs} g</Text>
+                <Text style={styles.gridLabel}>Carbs</Text>
+              </View>
+
+              <View style={styles.gridItem}>
+                <Text style={styles.gridValue}>{food.fat} g</Text>
+                <Text style={styles.gridLabel}>Fat</Text>
+              </View>
+
+              <View style={styles.gridItem}>
+                <Text style={styles.gridValue}>{food.fiber} g</Text>
+                <Text style={styles.gridLabel}>Fiber</Text>
+              </View>
+
+              <View style={styles.gridItem}>
+                <Text style={styles.gridValue}>{food.sugar} g</Text>
+                <Text style={styles.gridLabel}>Sugar</Text>
+              </View>
+            </View>
+          </View>
+        ))}
+        <View style={styles.addFoodContainer}>
+          <TextInput
+            placeholder="Add missing food"
+            value={missingFood}
+            onChangeText={setMissingFood}
+            style={styles.addFoodInput}
+          />
+
+          <TouchableOpacity
+            style={styles.addFoodButton}
+            onPress={addMissingFood}
+            disabled={addingFood}
+          >
+            <Text style={styles.actionText}>
+              {addingFood ? "Adding..." : "Add Food"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            margin: 20,
+          }}
         >
-          <Text style={styles.actionText}>
-            {logging ? "Logging..." : "Log Meal"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#999" }]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.actionText}>Scan Again</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={logMeal}
+            disabled={logging}
+          >
+            <Text style={styles.actionText}>
+              {logging ? "Logging..." : "Log Meal"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

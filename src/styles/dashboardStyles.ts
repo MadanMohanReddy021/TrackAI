@@ -103,10 +103,8 @@ export const createStyles = (colors: any) =>
       fontWeight: "500",
     },
     dateContainer: {
-      paddingVertical: 0,
-      paddingHorizontal: 0,
       gap: 5,
-      backgroundColor: colors.card,
+      backgroundColor: colors.date,
       marginBottom: 10,
     },
     greeting: {
@@ -454,6 +452,13 @@ export const createStyles = (colors: any) =>
       fontWeight: "700",
       color: colors.text,
       marginTop: 20,
+    },
+    waterFill: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      opacity: 0.25,
     },
 
     macroTarget: {

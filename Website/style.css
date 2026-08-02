@@ -85,7 +85,95 @@ button {
   border: 1px solid #333;
   margin-left: 15px;
 }
+.download-page {
+  min-height: 90vh;
 
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+}
+
+.download-card {
+  max-width: 600px;
+
+  text-align: center;
+
+  background: rgba(255, 255, 255, 0.06);
+
+  padding: 50px;
+
+  border-radius: 30px;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  backdrop-filter: blur(20px);
+}
+
+.download-logo {
+  width: 100px;
+}
+
+.status {
+  color: #3b82f6;
+
+  font-size: 22px;
+
+  margin: 20px;
+}
+
+.stores {
+  display: flex;
+
+  gap: 20px;
+
+  margin-top: 40px;
+}
+
+.store {
+  background: #111827;
+
+  padding: 25px;
+
+  border-radius: 20px;
+
+  flex: 1;
+}
+
+.store p {
+  color: #aaa;
+}
+
+.apk {
+  margin-top: 40px;
+
+  padding-top: 30px;
+
+  border-top: 1px solid #222;
+}
+
+.apk-button {
+  display: inline-block;
+
+  margin-top: 20px;
+
+  padding: 15px 35px;
+
+  background: #2563eb;
+
+  color: white;
+
+  border-radius: 30px;
+
+  text-decoration: none;
+}
+
+@media (max-width: 700px) {
+  .stores {
+    flex-direction: column;
+  }
+}
 .hero-image img {
   width: 350px;
 

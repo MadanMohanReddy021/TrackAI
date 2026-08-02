@@ -6,17 +6,23 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../context/ThemeContext";
+import { createStyles } from "../styles/personalStyles";
 
 const API_URL = `${BASE_URL}/get-profile`;
 
 export default function PersonalScreen() {
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
 
@@ -150,111 +156,61 @@ export default function PersonalScreen() {
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#000" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
 
-          <Text style={styles.title}>Personal Details</Text>
+            <Text style={styles.title}>Personal Details</Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => {
+              if (editing) {
+                updateProfile();
+              } else {
+                setEditing(true);
+              }
+            }}
+          >
+            <Ionicons
+              name={editing ? "checkmark" : "create-outline"}
+              size={26}
+              color={colors.text}
+            />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          onPress={() => {
-            if (editing) {
-              updateProfile();
-            } else {
-              setEditing(true);
-            }
-          }}
-        >
-          <Ionicons
-            name={editing ? "checkmark" : "create-outline"}
-            size={26}
-            color="#000"
-          />
-        </TouchableOpacity>
-      </View>
+        {renderField("Name", "name")}
 
-      {renderField("Name", "name")}
+        {renderField("Gender", "gender")}
 
-      {renderField("Gender", "gender")}
+        {renderField("Age", "age", "numeric")}
 
-      {renderField("Age", "age", "numeric")}
+        {renderField("Height (cm)", "height", "numeric")}
 
-      {renderField("Height (cm)", "height", "numeric")}
-
-      {renderField("Weight (kg)", "weight", "numeric")}
-    </ScrollView>
+        {renderField("Weight (kg)", "weight", "numeric")}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-  },
-  header: {
-    marginTop: 20,
-    marginBottom: 30,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  backButton: {
-    marginRight: 12,
-    padding: 4,
-  },
-
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#000",
-  },
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  card: {
-    marginBottom: 18,
-  },
-
-  label: {
-    color: "#777",
-    marginBottom: 8,
-    fontSize: 15,
-  },
-
-  input: {
-    backgroundColor: "#F5F5F5",
-    borderRadius: 12,
-    padding: 10,
-    fontSize: 17,
-    color: "#000",
-  },
-
-  editInput: {
-    borderWidth: 1,
-    borderColor: "#000",
-    backgroundColor: "#fff",
-  },
-});

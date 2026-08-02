@@ -205,7 +205,7 @@ const createStyles = (colors: any) =>
     },
 
     example: {
-      color: colors.textSecondary,
+      color: colors.secondaryText,
 
       marginBottom: 25,
 

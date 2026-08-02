@@ -50,7 +50,7 @@ export default function AuthScreen() {
 
       console.log("Google Token:", idToken);
 
-      const backendResponse = await fetch(`${BASE_URL}/auth/google`, {
+      const backendResponse = await fetch(`${BASE_URL}/google-sign`, {
         method: "POST",
 
         headers: {
@@ -100,8 +100,7 @@ export default function AuthScreen() {
       if (response.ok) {
         await AsyncStorage.setItem("userid", String(data.userid));
         router.replace("/onboarding");
-      }
-      if (response.status == 400) {
+      } else if (response.status == 400) {
         await AsyncStorage.setItem("userid", String(data.userid));
         setOtpSent(true);
 
