@@ -3,7 +3,6 @@ import { Text, View } from "react-native";
 import CircularProgress from "react-native-circular-progress-indicator";
 import { useTheme } from "../../context/ThemeContext";
 import { createStyles } from "../../styles/dashboardStyles";
-import { DarkTheme, LightTheme } from "../../theme/colors";
 
 interface Props {
   consumed: number;
@@ -13,9 +12,7 @@ interface Props {
 const CalorieCard = ({ consumed, target }: Props) => {
   const percent = Math.min(100, (consumed / target) * 100);
 
-  const { theme } = useTheme();
-
-  const colors = theme === "dark" ? DarkTheme : LightTheme;
+  const { colors } = useTheme();
 
   const styles = createStyles(colors);
 
@@ -32,7 +29,7 @@ const CalorieCard = ({ consumed, target }: Props) => {
           inActiveStrokeWidth={14}
           activeStrokeColor={colors.primary}
           inActiveStrokeColor={colors.progressBackground}
-          showProgressValue={false} // Hide the percentage
+          showProgressValue={false}
           title={`${consumed.toLocaleString()}`}
           subtitle={`/ ${target.toLocaleString()} kcal`}
           titleColor={colors.text}

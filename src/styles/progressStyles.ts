@@ -23,6 +23,7 @@ export const createStyles = (colors: any) =>
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: 15,
+      marginTop: 10,
       backgroundColor: colors.background,
     },
 

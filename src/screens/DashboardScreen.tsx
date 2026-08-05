@@ -11,7 +11,11 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { readRecords } from "react-native-health-connect";
+import {
+  initialize,
+  readRecords,
+  requestPermission,
+} from "react-native-health-connect";
 import AddMenu from "../components/dashboard/AddMenu";
 import CalorieCard from "../components/dashboard/CalorieCard";
 import MacroCard from "../components/dashboard/MacroCard";
@@ -253,13 +257,32 @@ const DashboardScreen = () => {
   // }, []);
   // ---------------- LOAD DATA ----------------
   //----------------------------------------------- getting steps from the health connect--------------------------------------------------------------
+
   useEffect(() => {
-    const loadTodaySteps = async () => {
+    const loadSteps = async () => {
       try {
-        const startOfDay = new Date();
+        // Initialize Health Connect
+        const isInitialized = await initialize();
+
+        if (!isInitialized) {
+          console.log("Health Connect initialization failed");
+          return;
+        }
+
+        // Request permission
+        await requestPermission([
+          {
+            accessType: "read",
+            recordType: "Steps",
+          },
+        ]);
+
+        // Create start and end of the selected day
+        const startOfDay = new Date(selectedDate);
         startOfDay.setHours(0, 0, 0, 0);
 
-        const endOfDay = new Date();
+        const endOfDay = new Date(selectedDate);
+        endOfDay.setHours(23, 59, 59, 999);
 
         const result = await readRecords("Steps", {
           timeRangeFilter: {
@@ -276,16 +299,16 @@ const DashboardScreen = () => {
 
         setSteps(totalSteps);
 
-        console.log("Today's steps:", totalSteps);
-
-        setSteps(totalSteps);
+        console.log(`Steps for ${selectedDate}:`, totalSteps);
       } catch (error) {
         console.log("Error loading steps:", error);
       }
     };
 
-    loadTodaySteps();
-  }, []);
+    if (selectedDate) {
+      loadSteps();
+    }
+  }, [selectedDate]);
   //----------------------------------------------- getting steps from the health connect--------------------------------------------------------------
 
   useEffect(() => {
@@ -393,7 +416,7 @@ const DashboardScreen = () => {
       >
         {/* HEADER */}
         <Text style={styles.greeting}>
-          Hello {profile?.full_name ?? "there"}
+          Hello {profile?.full_name ?? "there"},
         </Text>
         {/* Date Selector*/}
         <ScrollView

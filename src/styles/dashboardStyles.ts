@@ -49,7 +49,7 @@ export const createStyles = (colors: any) =>
       borderWidth: 1,
       borderColor: colors.border,
 
-      marginBottom: 15,
+      marginBottom: 5,
     },
     header: {
       flexDirection: "row",
@@ -152,6 +152,7 @@ export const createStyles = (colors: any) =>
       justifyContent: "center",
       alignItems: "center",
       paddingVertical: 10,
+      marginBottom: 5,
     },
 
     waterAmount: {

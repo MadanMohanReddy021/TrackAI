@@ -6,7 +6,7 @@ import {
   Camera,
   Dumbbell,
   Mic,
-  Sparkles
+  Sparkles,
 } from "lucide-react-native";
 import { useEffect } from "react";
 import {
@@ -14,7 +14,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 const LandingScreen = () => {

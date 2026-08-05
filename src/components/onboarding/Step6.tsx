@@ -243,9 +243,11 @@ const Step6: React.FC<Step6Props> = ({
           endSpacing={20}
           xAxisLabelTextStyle={{
             fontSize: 12,
+            color: colors.secondaryText,
           }}
           yAxisTextStyle={{
             fontSize: 12,
+            color: colors.secondaryText,
           }}
         />
       </View>

@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import BASE_URL from "../../storage/ipAdress";
 import { createStyles } from "../../styles/authStyles";
-import { DarkTheme, LightTheme } from "../../theme/colors";
 
 import {
   SafeAreaView,
@@ -26,12 +25,10 @@ export default function AuthScreen() {
   const [loginOtp, setLoginOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [name, setName] = useState("");
+  const [name, setName] = useState("None");
 
   const isSignup = tab === "signup";
-  const { theme } = useTheme();
-
-  const colors = theme === "dark" ? DarkTheme : LightTheme;
+  const { colors } = useTheme();
 
   const styles = createStyles(colors);
   useEffect(() => {
@@ -40,23 +37,27 @@ export default function AuthScreen() {
   }, []);
   const handleGoogleLogin = async () => {
     try {
-      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+      console.log("Google Play Services available");
+      const currentUser = await GoogleSignin.getCurrentUser();
+      console.log("Current User:", currentUser);
+      if (currentUser) {
+        await GoogleSignin.signOut();
+      }
 
-      const response = await GoogleSignin.signIn();
+      await GoogleSignin.signIn();
 
       const tokens = await GoogleSignin.getTokens();
 
       const idToken = tokens.idToken;
 
-      console.log("Google Token:", idToken);
-
       const backendResponse = await fetch(`${BASE_URL}/google-sign`, {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           idToken,
         }),
@@ -64,19 +65,35 @@ export default function AuthScreen() {
 
       const data = await backendResponse.json();
 
-      console.log("Backend:", data);
-
       if (backendResponse.ok) {
         await AsyncStorage.setItem("userid", String(data.userId));
 
-        await AsyncStorage.setItem("token", data.token);
+        await AsyncStorage.setItem("userid", data.userid);
 
-        router.replace("/dashboard");
+        // Check user profile
+        const profileResponse = await fetch(
+          `${BASE_URL}/get-profile/?userid=${data.userid}`,
+        );
+
+        const profileData = await profileResponse.json();
+
+        if (profileData.success) {
+          // Existing user
+          router.replace("/dashboard");
+        } else {
+          // New Google user
+          router.replace("/onboarding");
+        }
       } else {
+        await GoogleSignin.signOut();
         alert(data.message || "Google login failed");
       }
     } catch (error) {
-      console.log("Google Login Error", error);
+      console.log("Google Login Error:", error);
+
+      try {
+        await GoogleSignin.signOut();
+      } catch {}
     }
   };
   const handleSignup = async () => {
@@ -145,6 +162,21 @@ export default function AuthScreen() {
       // LOGIN SUCESS
       if (response.ok) {
         await AsyncStorage.setItem("userid", String(data.userid));
+        const profileResponse = await fetch(
+          `${BASE_URL}/get-profile/?userid=${data.userId}`,
+        );
+
+        const profileData = await profileResponse.json();
+
+        console.log("Profile Response:", profileData);
+
+        if (profileData.success) {
+          // Existing user
+          router.replace("/dashboard");
+        } else {
+          // New Google user
+          router.replace("/onboarding");
+        }
         console.log(response.status);
         if (data.token) {
           await AsyncStorage.setItem("token", data.token);
@@ -317,7 +349,7 @@ export default function AuthScreen() {
 
           {/* Name */}
 
-          {tab === "signup" && (
+          {/* {tab === "signup" && (
             <>
               <Text style={styles.label}>Full Name</Text>
 
@@ -329,7 +361,7 @@ export default function AuthScreen() {
                 style={styles.input}
               />
             </>
-          )}
+          )} */}
 
           {/* Email */}
 
@@ -452,17 +484,9 @@ export default function AuthScreen() {
               <View style={styles.avatar} />
               <View style={styles.avatar} />
             </View>
-
-            <View>
-              <Text style={styles.rating}>★★★★★</Text>
-
-              <Text style={styles.trusted}>
-                Trusted by 25,000+ fitness enthusiasts
-              </Text>
-            </View>
           </View>
           <View style={styles.footer}>
-            <Ionicons name="lock-closed" size={14} color="#999" />
+            <Ionicons name="lock-closed" size={14} color={colors.text} />
 
             <Text style={styles.footerText}>
               Your data is secure and encrypted

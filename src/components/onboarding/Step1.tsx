@@ -70,7 +70,15 @@ const Step1: React.FC<Step1Props> = ({
         placeholderTextColor={colors.secondaryText}
         keyboardType="number-pad"
         value={age}
-        onChangeText={setAge}
+        onChangeText={(text) => {
+          // Allow only numbers
+          const numericText = text.replace(/[^0-9]/g, "");
+
+          // Prevent above 100
+          if (Number(numericText) <= 100) {
+            setAge(numericText);
+          }
+        }}
       />
 
       <Text style={styles.sectionTitle}>Height</Text>
@@ -110,14 +118,21 @@ const Step1: React.FC<Step1Props> = ({
           </Text>
         </TouchableOpacity>
       </View>
-
       <TextInput
         style={styles.input}
         placeholder={`Height (${selectedHeightUnit})`}
         placeholderTextColor={colors.secondaryText}
         keyboardType="decimal-pad"
         value={height}
-        onChangeText={setHeight}
+        onChangeText={(text) => {
+          // Allow only numbers and one decimal point
+          const numericText = text.replace(/[^0-9.]/g, "");
+
+          // Prevent multiple decimal points
+          if ((numericText.match(/\./g) || []).length <= 1) {
+            setHeight(numericText);
+          }
+        }}
       />
 
       <Text style={styles.sectionTitle}>Weight</Text>
@@ -164,7 +179,15 @@ const Step1: React.FC<Step1Props> = ({
         placeholderTextColor={colors.secondaryText}
         keyboardType="decimal-pad"
         value={weight}
-        onChangeText={setWeight}
+        onChangeText={(text) => {
+          // Allow only numbers and one decimal point
+          const numericText = text.replace(/[^0-9.]/g, "");
+
+          // Prevent multiple decimal points
+          if ((numericText.match(/\./g) || []).length <= 1) {
+            setWeight(numericText);
+          }
+        }}
       />
     </View>
   );

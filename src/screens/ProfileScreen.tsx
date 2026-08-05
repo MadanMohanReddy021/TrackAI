@@ -12,7 +12,7 @@ const accountItems = [
     id: 1,
   },
   {
-    title: "Preferences",
+    title: "Color Theme",
     icon: "settings-outline",
     id: 2,
   },
@@ -131,11 +131,8 @@ export default function ProfileScreen() {
             text: "Sign Out",
             onPress: async () => {
               try {
-                const before = await AsyncStorage.getItem("userid");
-
-                console.log("Before remove:", before);
-
-                const after = await AsyncStorage.getItem("userid");
+                await AsyncStorage.removeItem("userid");
+                await AsyncStorage.removeItem("token");
 
                 router.replace("/auth");
               } catch (error) {
@@ -160,24 +157,11 @@ export default function ProfileScreen() {
               style: "destructive",
               onPress: async () => {
                 try {
-                  const userId = await AsyncStorage.getItem("userid");
-
-                  // Example API
-                  await fetch("YOUR_BACKEND_DELETE_API", {
-                    method: "DELETE",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      userId,
-                    }),
-                  });
-
                   await AsyncStorage.removeItem("userid");
 
                   router.replace("/auth");
                 } catch (e) {
-                  Alert.alert("Error", "Failed to delete account.");
+                  Alert.alert("Error", "Failed to remove account data.");
                 }
               },
             },

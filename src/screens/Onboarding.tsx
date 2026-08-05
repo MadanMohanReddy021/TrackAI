@@ -31,7 +31,6 @@ const OnboardingScreen = () => {
   const { colors } = useTheme();
 
   const styles = createStyles(colors);
-  console.log("ONBOARDING COLORS:", colors);
 
   const TOTAL_STEPS = 7;
 
@@ -113,12 +112,8 @@ const OnboardingScreen = () => {
   // ---------------- FINISH API ----------------
 
   const finish = async () => {
-    console.log("1. FINISH STARTED");
-
     try {
       setLoading(true);
-
-      console.log("2. Getting email");
 
       const heightCm =
         heightUnit === "inch" ? Number(height) * 2.54 : Number(height);
@@ -126,7 +121,6 @@ const OnboardingScreen = () => {
       const weightKg =
         weightUnit === "lbs" ? Number(weight) * 0.453592 : Number(weight);
       const userid = await AsyncStorage.getItem("userid");
-      console.log("3. USERID:", userid);
       if (!userid) {
         Alert.alert("Error", "User ID not found in storage");
         return;
@@ -157,8 +151,6 @@ const OnboardingScreen = () => {
         referral_source: null,
       };
 
-      console.log("4. PROFILE:", profile);
-
       const apiResponse = await fetch(`${BASE_URL}/profile`, {
         method: "POST",
         headers: {
@@ -167,13 +159,7 @@ const OnboardingScreen = () => {
         body: JSON.stringify(profile),
       });
 
-      console.log("5. STATUS:", apiResponse.status);
-      console.log("6. CONTENT-TYPE:", apiResponse.headers.get("content-type"));
-
       const responseText = await apiResponse.text();
-
-      console.log("7. RAW RESPONSE:");
-      console.log(responseText);
 
       if (!apiResponse.ok) {
         throw new Error(responseText);
@@ -186,8 +172,6 @@ const OnboardingScreen = () => {
       } catch (err) {
         throw new Error("Server did not return valid JSON.\n\n" + responseText);
       }
-
-      console.log("8. PARSED RESPONSE:", response);
 
       setSummary(response);
       setStep(6);
@@ -212,7 +196,6 @@ const OnboardingScreen = () => {
     }
 
     if (step === 5) {
-      console.log("Calling finish()");
       finish();
       return;
     }

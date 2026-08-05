@@ -1,5 +1,6 @@
 import { useTheme } from "@/context/ThemeContext";
 import BASE_URL from "@/storage/ipAdress";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { router, useLocalSearchParams } from "expo-router";
@@ -116,6 +117,16 @@ export default function FoodResult() {
       },
     );
   }, [foods]);
+  const deleteFood = (index: number) => {
+    setFoods((prev) => {
+      const updatedFoods = prev.filter((_, i) => i !== index);
+
+      console.log("After delete:", updatedFoods);
+
+      return updatedFoods;
+    });
+  };
+
   const addMissingFood = async () => {
     try {
       if (!missingFood.trim()) {
@@ -175,7 +186,7 @@ export default function FoodResult() {
       setLogging(true);
 
       const userid = await AsyncStorage.getItem("userid");
-
+      console.log("User ID:", userid);
       if (!userid) {
         Alert.alert("Error", "User not found");
         return;
@@ -281,8 +292,12 @@ export default function FoodResult() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={[
+          { flexGrow: 1 },
+          { backgroundColor: colors.background },
+        ]}
         keyboardShouldPersistTaps="handled"
+        style={styles.container}
       >
         {image ? (
           <Image source={{ uri: image as string }} style={styles.image} />
@@ -352,9 +367,18 @@ export default function FoodResult() {
             <Text style={styles.totalValue}>{totals.sugar.toFixed(1)} g</Text>
           </View>
         </View>
-
         {foods.map((food, index) => (
-          <View key={index} style={styles.card}>
+          <View key={`${food.name}-${index}`} style={styles.card}>
+            {/* Delete Button */}
+            <TouchableOpacity onPress={() => deleteFood(index)}>
+              <Ionicons
+                name="trash-bin"
+                style={styles.deleteButton}
+                size={22}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
+
             <Text style={styles.foodName}>{food.name}</Text>
 
             <View style={styles.servingRow}>

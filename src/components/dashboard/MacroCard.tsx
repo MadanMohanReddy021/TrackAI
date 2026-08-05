@@ -2,7 +2,6 @@ import { Text, View } from "react-native";
 
 import { useTheme } from "../../context/ThemeContext";
 import { createStyles } from "../../styles/dashboardStyles";
-import { DarkTheme, LightTheme } from "../../theme/colors";
 
 import CircularProgress from "react-native-circular-progress-indicator";
 type MacroType = "Protein" | "Carbs" | "Fat" | "Fiber" | "Sugar";
@@ -29,9 +28,7 @@ const MacroCard = ({ title, value, target }: Props) => {
     Fiber: "🥦",
     Sugar: "🍬",
   };
-  const { theme } = useTheme();
-
-  const colors = theme === "dark" ? DarkTheme : LightTheme;
+  const { colors } = useTheme();
 
   const styles = createStyles(colors);
 

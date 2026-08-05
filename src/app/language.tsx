@@ -1,29 +1,45 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Language() {
+  const { colors } = useTheme();
+
   const [selectedLanguage, setSelectedLanguage] = useState("English");
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.background,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons
-            name="arrow-back"
-            size={28}
-            color="#000"
-          />
+          <Ionicons name="arrow-back" size={28} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>
+        <Text
+          style={[
+            styles.headerTitle,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
           Language
         </Text>
 
@@ -32,21 +48,48 @@ export default function Language() {
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.description}>
+        <Text
+          style={[
+            styles.description,
+            {
+              color: colors.secondaryText,
+            },
+          ]}
+        >
           Choose your preferred language.
         </Text>
 
         <TouchableOpacity
-          style={styles.languageCard}
+          style={[
+            styles.languageCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
           activeOpacity={0.8}
           onPress={() => setSelectedLanguage("English")}
         >
           <View>
-            <Text style={styles.languageName}>
+            <Text
+              style={[
+                styles.languageName,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
               English
             </Text>
 
-            <Text style={styles.languageSub}>
+            <Text
+              style={[
+                styles.languageSub,
+                {
+                  color: colors.secondaryText,
+                },
+              ]}
+            >
               English (United States)
             </Text>
           </View>
@@ -55,7 +98,7 @@ export default function Language() {
             <Ionicons
               name="checkmark-circle"
               size={26}
-              color="#000"
+              color={colors.primary}
             />
           )}
         </TouchableOpacity>
@@ -67,25 +110,21 @@ export default function Language() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
 
   header: {
-    height: 50,
+    height: 65,
     paddingTop: 15,
     paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#EFEFEF",
-    backgroundColor: "#fff",
   },
 
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#000",
   },
 
   content: {
@@ -94,7 +133,6 @@ const styles = StyleSheet.create({
 
   description: {
     fontSize: 15,
-    color: "#666",
     marginBottom: 20,
   },
 
@@ -102,9 +140,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#E5E5E5",
     borderRadius: 16,
     padding: 18,
   },
@@ -112,12 +148,10 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#000",
   },
 
   languageSub: {
     marginTop: 4,
     fontSize: 14,
-    color: "#777",
   },
 });

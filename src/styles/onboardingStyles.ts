@@ -135,7 +135,7 @@ export const createStyles = (colors: any) =>
     },
     chartDescription: {
       fontSize: 14,
-      color: colors.textSecondary,
+      color: colors.secondaryText,
       marginBottom: 15,
       lineHeight: 20,
     },
@@ -234,7 +234,7 @@ export const createStyles = (colors: any) =>
 
     metricTitle: {
       fontSize: 13,
-      color: colors.textSecondary,
+      color: colors.secondaryText,
       marginBottom: 8,
       fontWeight: "500",
     },
@@ -247,7 +247,7 @@ export const createStyles = (colors: any) =>
 
     metricUnit: {
       fontSize: 12,
-      color: colors.textSecondary,
+      color: colors.secondaryText,
       marginTop: 4,
     },
     selectedUnit: {

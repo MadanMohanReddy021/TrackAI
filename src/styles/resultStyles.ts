@@ -4,7 +4,7 @@ export const createStyles = (colors: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.background,
+      backgroundColor: colors.primary,
     },
 
     image: {
@@ -13,7 +13,12 @@ export const createStyles = (colors: any) =>
       borderBottomLeftRadius: 24,
       borderBottomRightRadius: 24,
     },
-
+    deleteButton: {
+      position: "absolute",
+      right: 10,
+      top: 8,
+      zIndex: 10,
+    },
     mealContainer: {
       margin: 20,
       padding: 15,
@@ -53,7 +58,7 @@ export const createStyles = (colors: any) =>
     },
 
     selectedMealText: {
-      color: colors.white,
+      color: colors.secondaryText,
     },
 
     heading: {
@@ -86,6 +91,7 @@ export const createStyles = (colors: any) =>
       borderRadius: 12,
       justifyContent: "center",
       alignItems: "center",
+      color: colors.buttonText,
     },
 
     card: {
@@ -267,7 +273,7 @@ export const createStyles = (colors: any) =>
     },
 
     actionText: {
-      color: colors.white,
+      color: colors.buttonText,
       fontSize: 16,
       fontWeight: "700",
     },
