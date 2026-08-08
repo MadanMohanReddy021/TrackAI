@@ -33,7 +33,7 @@ export const createStyles = (colors: any) =>
     },
 
     foodCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       padding: 12,
       borderRadius: 12,
       marginBottom: 10,

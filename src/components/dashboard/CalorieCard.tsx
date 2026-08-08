@@ -20,7 +20,7 @@ const CalorieCard = ({ consumed, target }: Props) => {
     <View style={styles.calorieCard}>
       <Text style={styles.calorieTitle}>🔥 Calories</Text>
 
-      <View style={styles.calorieProgress}>
+      <View style={styles.progressContainer}>
         <CircularProgress
           value={percent}
           maxValue={100}
@@ -30,14 +30,15 @@ const CalorieCard = ({ consumed, target }: Props) => {
           activeStrokeColor={colors.primary}
           inActiveStrokeColor={colors.progressBackground}
           showProgressValue={false}
-          title={`${consumed.toLocaleString()}`}
-          subtitle={`/ ${target.toLocaleString()} kcal`}
-          titleColor={colors.text}
-          subtitleColor={colors.secondaryText}
-          titleStyle={styles.calorieValue}
-          subtitleStyle={styles.calorieTarget}
-          valueSuffix=""
         />
+
+        <View style={styles.calorieTextContainer}>
+          <Text style={styles.calorieValue}>{consumed.toLocaleString()}</Text>
+
+          <Text style={styles.calorieTarget}>
+            / {target.toLocaleString()} kcal
+          </Text>
+        </View>
       </View>
 
       <Text style={styles.leftCalories}>

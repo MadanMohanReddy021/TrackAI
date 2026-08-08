@@ -49,8 +49,8 @@ export default function Progress() {
           },
         });
 
-        const totalSteps = result.records.reduce(
-          (sum, item) => sum + item.count,
+        const totalSteps = (result.records || []).reduce(
+          (sum, item) => sum + (item.count ?? 0),
           0,
         );
 
@@ -103,49 +103,42 @@ export default function Progress() {
   ]);
   const [nutritionLogs, setNutritionLogs] = useState<any[]>([
     {
-      date: "Mon",
       calories: 2200,
       protein: 120,
       carbs: 250,
       fat: 70,
     },
     {
-      date: "Tue",
       calories: 2400,
       protein: 130,
       carbs: 280,
       fat: 75,
     },
     {
-      date: "Wed",
       calories: 2100,
       protein: 110,
       carbs: 230,
       fat: 65,
     },
     {
-      date: "Thu",
       calories: 2600,
       protein: 140,
       carbs: 300,
       fat: 80,
     },
     {
-      date: "Fri",
       calories: 2300,
       protein: 125,
       carbs: 260,
       fat: 72,
     },
     {
-      date: "Sat",
       calories: 2500,
       protein: 135,
       carbs: 290,
       fat: 78,
     },
     {
-      date: "Sun",
       calories: 2700,
       protein: 150,
       carbs: 320,
@@ -226,38 +219,35 @@ export default function Progress() {
     ],
   };
   const nutritionChart = {
-    labels: [],
+    labels: [" "], // blank label
 
     datasets: [
       {
         data: nutritionLogs.length
           ? nutritionLogs.map((item) => Number(item.calories) || 0)
           : [0],
-        color: () => "#FF5252", // Calories - Red
+        color: () => "#FF5252",
         strokeWidth: 3,
       },
-
       {
         data: nutritionLogs.length
           ? nutritionLogs.map((item) => Number(item.protein) || 0)
           : [0],
-        color: () => "#4CAF50", // Protein - Green
+        color: () => "#4CAF50",
         strokeWidth: 3,
       },
-
       {
         data: nutritionLogs.length
           ? nutritionLogs.map((item) => Number(item.carbs) || 0)
           : [0],
-        color: () => "#2196F3", // Carbs - Blue
+        color: () => "#2196F3",
         strokeWidth: 3,
       },
-
       {
         data: nutritionLogs.length
           ? nutritionLogs.map((item) => Number(item.fat) || 0)
           : [0],
-        color: () => "#FFC107", // Fat - Yellow
+        color: () => "#FFC107",
         strokeWidth: 3,
       },
     ],

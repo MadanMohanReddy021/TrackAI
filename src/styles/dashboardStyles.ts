@@ -13,7 +13,35 @@ export const createStyles = (colors: any) =>
       justifyContent: "center",
       alignItems: "center",
     },
+    progressContainer: {
+      width: 130,
+      height: 130,
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+    },
 
+    calorieTextContainer: {
+      position: "absolute",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 130,
+      height: 130,
+    },
+
+    calorieValue: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: colors.text,
+      textAlign: "center",
+    },
+
+    calorieTarget: {
+      fontSize: 12,
+      color: colors.secondaryText,
+      textAlign: "center",
+      marginTop: 2,
+    },
     centerContent: {
       position: "absolute",
       justifyContent: "center",
@@ -93,15 +121,6 @@ export const createStyles = (colors: any) =>
       justifyContent: "center",
     },
 
-    calorieValue: {
-      fontSize: 22,
-      fontWeight: "800",
-    },
-
-    calorieTarget: {
-      fontSize: 12,
-      fontWeight: "500",
-    },
     dateContainer: {
       gap: 5,
       backgroundColor: colors.date,
@@ -114,6 +133,67 @@ export const createStyles = (colors: any) =>
       marginTop: 8,
       marginBottom: 0,
       paddingHorizontal: 0,
+    },
+    skeletonHeader: {
+      width: "55%",
+      height: 28,
+      borderRadius: 8,
+      backgroundColor: "#E5E7EB",
+      marginBottom: 24,
+    },
+
+    skeletonCard: {
+      width: "100%",
+      minHeight: 100,
+      borderRadius: 16,
+      backgroundColor: "#E5E7EB",
+      padding: 20,
+      marginBottom: 16,
+      justifyContent: "center",
+    },
+
+    skeletonCircle: {
+      width: 55,
+      height: 55,
+      borderRadius: 28,
+      backgroundColor: "#D1D5DB",
+      position: "absolute",
+      left: 20,
+    },
+
+    skeletonContent: {
+      marginLeft: 75,
+    },
+
+    skeletonLineLarge: {
+      width: "70%",
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: "#D1D5DB",
+      marginBottom: 10,
+    },
+
+    skeletonLineMedium: {
+      width: "50%",
+      height: 14,
+      borderRadius: 7,
+      backgroundColor: "#D1D5DB",
+      marginBottom: 10,
+    },
+
+    skeletonLineSmall: {
+      width: "30%",
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: "#D1D5DB",
+    },
+
+    skeletonSectionTitle: {
+      width: "35%",
+      height: 20,
+      borderRadius: 7,
+      backgroundColor: "#E5E7EB",
+      marginBottom: 16,
     },
     topSection: {
       flexDirection: "row",

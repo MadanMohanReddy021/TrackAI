@@ -21,6 +21,7 @@ import { configureGoogle } from "../../config/google";
 export default function AuthScreen() {
   const [tab, setTab] = useState<"login" | "signup">("signup");
   const [otp, setOtp] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginOtpRequired, setLoginOtpRequired] = useState(false);
   const [loginOtp, setLoginOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -35,165 +36,452 @@ export default function AuthScreen() {
     console.log(BASE_URL);
     configureGoogle();
   }, []);
+  const handleAuthButtonPress = async () => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+
+    try {
+      if (isSignup) {
+        if (!otpSent) {
+          await handleSignup();
+        } else {
+          await verifyOTP();
+        }
+      } else {
+        if (loginOtpRequired) {
+          await verifyOTP();
+        } else {
+          await handleLogin();
+        }
+      }
+    } catch (error) {
+      console.log("Authentication error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   const handleGoogleLogin = async () => {
     try {
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
-      console.log("Google Play Services available");
-      const currentUser = await GoogleSignin.getCurrentUser();
-      console.log("Current User:", currentUser);
-      if (currentUser) {
-        await GoogleSignin.signOut();
+      // Check Google Play Services
+      try {
+        await GoogleSignin.hasPlayServices({
+          showPlayServicesUpdateDialog: true,
+        });
+        console.log("Google Play Services available");
+      } catch (error) {
+        alert(
+          "Google Play Services are not available. Please update Google Play Services and try again.",
+        );
+        return;
       }
 
-      await GoogleSignin.signIn();
+      // Check if another Google account is already signed in
+      try {
+        const currentUser = await GoogleSignin.getCurrentUser();
+        console.log("Current User:", currentUser);
 
-      const tokens = await GoogleSignin.getTokens();
+        if (currentUser) {
+          await GoogleSignin.signOut();
+        }
+      } catch (error) {
+        console.log("Google account check error:", error);
+      }
+
+      // Google Sign In
+      let signInResult;
+
+      try {
+        signInResult = await GoogleSignin.signIn();
+        console.log("Google Sign In:", signInResult);
+      } catch (error: any) {
+        console.log("Google Sign In Error:", error);
+
+        if (error?.code === "SIGN_IN_CANCELLED") {
+          alert("Google sign-in was cancelled.");
+        } else if (error?.code === "IN_PROGRESS") {
+          alert("Google sign-in is already in progress.");
+        } else {
+          alert("Unable to sign in with Google. Please try again.");
+        }
+
+        return;
+      }
+
+      // Get Google tokens
+      let tokens;
+
+      try {
+        tokens = await GoogleSignin.getTokens();
+      } catch (error) {
+        console.log("Google Token Error:", error);
+        alert(
+          "Unable to get Google authentication details. Please try signing in again.",
+        );
+        return;
+      }
 
       const idToken = tokens.idToken;
 
-      const backendResponse = await fetch(`${BASE_URL}/google-sign`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          idToken,
-        }),
-      });
+      if (!idToken) {
+        alert("Google authentication failed. No ID token was received.");
+        return;
+      }
 
-      const data = await backendResponse.json();
+      // Send token to backend
+      let backendResponse;
+
+      try {
+        backendResponse = await fetch(`${BASE_URL}/google-sign`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            idToken,
+          }),
+        });
+      } catch (error) {
+        console.log("Google Backend Error:", error);
+
+        alert(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+        );
+        return;
+      }
+
+      let data;
+
+      try {
+        data = await backendResponse.json();
+      } catch (error) {
+        alert("The server returned an invalid response. Please try again.");
+        return;
+      }
+
+      console.log("Google Login Response:", data);
 
       if (backendResponse.ok) {
-        await AsyncStorage.setItem("userid", String(data.userId));
+        // Make sure userid exists
+        if (!data.userid && !data.userId) {
+          alert(
+            "Login was successful, but the user ID was not received from the server.",
+          );
+          return;
+        }
 
-        await AsyncStorage.setItem("userid", data.userid);
+        const userid = data.userid;
+
+        await AsyncStorage.setItem("userid", String(userid));
 
         // Check user profile
-        const profileResponse = await fetch(
-          `${BASE_URL}/get-profile/?userid=${data.userid}`,
-        );
+        try {
+          const profileResponse = await fetch(
+            `${BASE_URL}/get-profile/?userid=${userid}`,
+          );
 
-        const profileData = await profileResponse.json();
+          const profileData = await profileResponse.json();
 
-        if (profileData.success) {
-          // Existing user
-          router.replace("/dashboard");
-        } else {
-          // New Google user
-          router.replace("/onboarding");
+          console.log("Profile Response:", profileData);
+
+          if (profileData.success) {
+            router.replace("/dashboard");
+          } else {
+            router.replace("/onboarding");
+          }
+        } catch (error) {
+          console.log("Profile Check Error:", error);
+
+          alert(
+            "Google login was successful, but we could not load your profile. Please try again.",
+          );
         }
       } else {
         await GoogleSignin.signOut();
-        alert(data.message || "Google login failed");
+
+        if (backendResponse.status === 400) {
+          alert(
+            data.message ||
+              "Google account information is invalid. Please try again.",
+          );
+        } else if (backendResponse.status === 401) {
+          alert(
+            "Google authentication failed. Please sign in with Google again.",
+          );
+        } else if (backendResponse.status >= 500) {
+          alert("The server is currently unavailable. Please try again later.");
+        } else {
+          alert(data.message || "Google login failed. Please try again.");
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.log("Google Login Error:", error);
 
       try {
         await GoogleSignin.signOut();
       } catch {}
+
+      alert(
+        "Something went wrong while signing in with Google. Please try again.",
+      );
     }
   };
   const handleSignup = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/signup`, {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        await AsyncStorage.setItem("userid", String(data.userid));
-        router.replace("/onboarding");
-      } else if (response.status == 400) {
-        await AsyncStorage.setItem("userid", String(data.userid));
-        setOtpSent(true);
-
-        alert("OTP sent to your email");
-      } else {
-        alert(data.message || "Signup failed");
+      // Validate input
+      if (!name.trim()) {
+        alert("Please enter your name.");
+        return;
       }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-  const handleLogin = async () => {
-    try {
+
       if (!email.trim()) {
-        alert("Please enter your email");
+        alert("Please enter your email address.");
         return;
       }
 
       if (!password.trim()) {
-        alert("Please enter your password");
+        alert("Please enter a password.");
         return;
       }
 
-      const response = await fetch(`${BASE_URL}/login`, {
-        method: "POST",
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        headers: {
-          "Content-Type": "application/json",
-        },
+      if (!emailRegex.test(email.trim())) {
+        alert("Please enter a valid email address.");
+        return;
+      }
 
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+      if (password.length < 6) {
+        alert("Password must contain at least 6 characters.");
+        return;
+      }
 
-      const data = await response.json();
+      let response;
+
+      try {
+        response = await fetch(`${BASE_URL}/signup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name.trim(),
+            email: email.trim(),
+            password,
+          }),
+        });
+      } catch (error) {
+        console.log("Signup Network Error:", error);
+
+        alert(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+        );
+        return;
+      }
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch (error) {
+        alert("The server returned an invalid response. Please try again.");
+        return;
+      }
+
+      console.log("Signup Response:", data);
+
+      if (response.ok) {
+        if (!data.userid) {
+          alert(
+            "Account creation was successful, but the user ID was not received.",
+          );
+          return;
+        }
+
+        await AsyncStorage.setItem("userid", String(data.userid));
+
+        router.replace("/onboarding");
+      } else if (response.status === 400) {
+        if (data.userid) {
+          await AsyncStorage.setItem("userid", String(data.userid));
+        }
+
+        setOtpSent(true);
+
+        alert(
+          data.message ||
+            "Your account requires email verification. An OTP has been sent to your email.",
+        );
+      } else if (response.status === 409) {
+        alert(
+          data.message || "An account with this email address already exists.",
+        );
+      } else if (response.status >= 500) {
+        alert("The server is currently unavailable. Please try again later.");
+      } else {
+        alert(
+          data.message || "Unable to create your account. Please try again.",
+        );
+      }
+    } catch (error: any) {
+      console.log("Signup Error:", error);
+
+      alert(
+        "Something went wrong while creating your account. Please try again.",
+      );
+    }
+  };
+  const handleLogin = async () => {
+    try {
+      // Validate email
+      if (!email.trim()) {
+        alert("Please enter your email address.");
+        return;
+      }
+
+      // Validate password
+      if (!password.trim()) {
+        alert("Please enter your password.");
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!emailRegex.test(email.trim())) {
+        alert("Please enter a valid email address.");
+        return;
+      }
+
+      let response;
+
+      try {
+        response = await fetch(`${BASE_URL}/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email.trim(),
+            password,
+          }),
+        });
+      } catch (error) {
+        console.log("Login Network Error:", error);
+
+        alert(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+        );
+        return;
+      }
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch (error) {
+        alert("The server returned an invalid response. Please try again.");
+        return;
+      }
 
       console.log("Login Response:", data);
+      console.log("Status:", response.status);
 
-      console.log(response.ok);
-      // LOGIN SUCESS
+      // LOGIN SUCCESS
       if (response.ok) {
-        await AsyncStorage.setItem("userid", String(data.userid));
-        const profileResponse = await fetch(
-          `${BASE_URL}/get-profile/?userid=${data.userId}`,
-        );
+        const userid = data.userid ?? data.userId;
 
-        const profileData = await profileResponse.json();
-
-        console.log("Profile Response:", profileData);
-
-        if (profileData.success) {
-          // Existing user
-          router.replace("/dashboard");
-        } else {
-          // New Google user
-          router.replace("/onboarding");
+        if (!userid) {
+          alert(
+            "Login was successful, but the user ID was not received from the server.",
+          );
+          return;
         }
-        console.log(response.status);
+
+        await AsyncStorage.setItem("userid", String(userid));
+
+        // Save token if provided
         if (data.token) {
           await AsyncStorage.setItem("token", data.token);
         }
-        router.replace("/dashboard");
+
+        // Check profile
+        try {
+          const profileResponse = await fetch(
+            `${BASE_URL}/get-profile/?userid=${userid}`,
+          );
+
+          const profileData = await profileResponse.json();
+
+          console.log("Profile Response:", profileData);
+
+          if (profileData.success) {
+            // Existing user
+            router.replace("/dashboard");
+          } else {
+            // Profile not completed
+            router.replace("/onboarding");
+          }
+        } catch (error) {
+          console.log("Profile Check Error:", error);
+
+          alert(
+            "Login was successful, but we could not load your profile. Please try again.",
+          );
+        }
+
+        return;
       }
+
       // OTP REQUIRED
-      else if (response.status === 400) {
-        await AsyncStorage.setItem("userid", String(data.userid));
+      if (response.status === 400) {
+        if (data.userid) {
+          await AsyncStorage.setItem("userid", String(data.userid));
+        }
+
         setLoginOtpRequired(true);
 
-        alert(data.message || "OTP verification required");
-      } else {
-        alert(data.message || "Invalid credentials");
+        alert(
+          data.message ||
+            "Email verification is required. Please enter the OTP sent to your email.",
+        );
+
+        return;
       }
-    } catch (error) {
+
+      // INVALID CREDENTIALS
+      if (response.status === 401) {
+        alert(
+          data.message ||
+            "Incorrect email or password. Please check your credentials and try again.",
+        );
+
+        return;
+      }
+
+      // USER NOT FOUND
+      if (response.status === 404) {
+        alert(data.message || "No account was found with this email address.");
+
+        return;
+      }
+
+      // SERVER ERROR
+      if (response.status >= 500) {
+        alert("The server is currently unavailable. Please try again later.");
+
+        return;
+      }
+
+      // OTHER ERROR
+      alert(
+        data.message ||
+          "Unable to log in. Please check your details and try again.",
+      );
+    } catch (error: any) {
       console.log("Login Error:", error);
+
+      alert("Something went wrong while logging in. Please try again.");
     }
   };
   const verifyOTP = async () => {
@@ -433,30 +721,22 @@ export default function AuthScreen() {
           {/* Button */}
 
           <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              if (isSignup) {
-                if (!otpSent) {
-                  handleSignup();
-                } else {
-                  verifyOTP();
-                }
-              } else {
-                if (loginOtpRequired) {
-                  verifyOTP();
-                } else {
-                  handleLogin();
-                }
-              }
-            }}
+            style={[styles.button, isSubmitting && styles.buttonDisabled]}
+            onPress={handleAuthButtonPress}
+            disabled={isSubmitting}
           >
             <Text style={styles.buttonText}>
-              {isSignup ? "Start Free Today" : "Sign In"}
+              {isSubmitting
+                ? "Please wait..."
+                : isSignup
+                  ? "Start Free Today"
+                  : "Sign In"}
             </Text>
 
-            <Ionicons name="arrow-forward" size={18} color="white" />
+            {!isSubmitting && (
+              <Ionicons name="arrow-forward" size={18} color="white" />
+            )}
           </TouchableOpacity>
-
           {/* Divider */}
 
           <View style={styles.dividerRow}>

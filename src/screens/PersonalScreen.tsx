@@ -92,27 +92,16 @@ export default function PersonalScreen() {
         ...profile.data,
 
         userid,
-
         full_name: user.name,
         gender: user.gender,
         age: Number(user.age),
         height: Number(user.height),
-        weight: Number(user.weight),
-
-        target_weight_kg: profile.data.target_weight_kg ?? "60.00",
-        activity_level: profile.data.activity_level ?? "moderately_active",
-        goal: profile.data.goal ?? "gain",
-        goal_type: profile.data.goal_type ?? "moderate",
-
-        minimum_steps: profile.data.minimum_steps ?? 10000,
-        target_date: profile.data.target_date ?? "2026-12-31",
-        referral_source: profile.data.referral_source ?? "app",
+        current_weight_kg: Number(user.weight),
       };
-
       console.log(payload);
 
-      const response = await fetch(`${BASE_URL}/profile`, {
-        method: "POST",
+      const response = await fetch(`${BASE_URL}/update-profile`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },

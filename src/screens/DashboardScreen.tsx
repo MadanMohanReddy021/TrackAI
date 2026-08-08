@@ -3,13 +3,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   ScrollView,
   Text,
   TouchableOpacity,
   useColorScheme,
-  View,
+  View
 } from "react-native";
 import {
   initialize,
@@ -323,6 +322,7 @@ const DashboardScreen = () => {
 
       if (!userid) {
         Alert.alert("Error", "User ID not found");
+        router.replace("/auth");
         return;
       }
       const nutrientsResponse = await getNutrients(userid, date);
@@ -398,10 +398,30 @@ const DashboardScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#2c2413" />
+      <View style={styles.container}>
+        <View style={styles.skeletonHeader} />
 
-        <Text style={styles.loadingText}>Loading...</Text>
+        <View style={styles.skeletonCard}>
+          <View style={styles.skeletonCircle} />
+
+          <View style={styles.skeletonContent}>
+            <View style={styles.skeletonLineLarge} />
+            <View style={styles.skeletonLineSmall} />
+          </View>
+        </View>
+
+        <View style={styles.skeletonSectionTitle} />
+
+        <View style={styles.skeletonCard}>
+          <View style={styles.skeletonLineLarge} />
+          <View style={styles.skeletonLineMedium} />
+          <View style={styles.skeletonLineSmall} />
+        </View>
+
+        <View style={styles.skeletonCard}>
+          <View style={styles.skeletonLineLarge} />
+          <View style={styles.skeletonLineMedium} />
+        </View>
       </View>
     );
   }

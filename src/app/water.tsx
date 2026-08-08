@@ -1,3 +1,4 @@
+import { useTheme } from "@/context/ThemeContext";
 import BASE_URL from "@/storage/ipAdress";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -12,18 +13,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// Replace with your theme hook
-// import { useTheme } from "@/theme";
-const colors = {
-  background: "#fff",
-  card: "#fbffff",
-  primary: "#0d0a02",
-  text: "#1A1A1A",
-  secondaryText: "#666",
-  border: "#ddd",
-  buttonText: "#fff",
-};
 
 const WATER_TARGET = 2500;
 
@@ -44,6 +33,9 @@ async function addWater(userid: string, date: string, amount: number) {
 }
 
 export default function WaterScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [currentWater, setCurrentWater] = useState(0);
   const [amount, setAmount] = useState("250");
   const [loading, setLoading] = useState(false);
@@ -145,105 +137,115 @@ export default function WaterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: 20,
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginVertical: 20,
-    textAlign: "center",
-    color: colors.text,
-  },
-  bottle: {
-    alignSelf: "center",
-    width: 130,
-    height: 300,
-    borderWidth: 4,
-    borderColor: colors.primary,
-    borderRadius: 30,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-    marginBottom: 20,
-  },
-  glassIcon: {
-    fontSize: 26,
-    marginBottom: 6,
-  },
-  bottleIcon: {
-    alignSelf: "center",
-    marginVertical: 20,
-  },
-  quickTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.text,
-    textAlign: "center",
-  },
+const createStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: 20,
+      justifyContent: "center",
+    },
 
-  quickSubtitle: {
-    fontSize: 12,
-    color: colors.secondaryText,
-    marginTop: 3,
-    textAlign: "center",
-  },
+    title: {
+      fontSize: 28,
+      fontWeight: "700",
+      marginVertical: 20,
+      textAlign: "center",
+      color: colors.text,
+    },
 
-  quick: {
-    width: 85,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    alignItems: "center",
-  },
-  fill: {
-    width: "100%",
-    backgroundColor: "#3BA7FF",
-  },
-  value: {
-    fontSize: 32,
-    fontWeight: "700",
-    textAlign: "center",
-    color: colors.text,
-  },
-  goal: {
-    textAlign: "center",
-    color: colors.secondaryText,
-    marginBottom: 25,
-  },
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 12,
-    marginBottom: 20,
-  },
+    bottle: {
+      alignSelf: "center",
+      width: 130,
+      height: 300,
+      borderWidth: 4,
+      borderColor: colors.primary,
+      borderRadius: 30,
+      overflow: "hidden",
+      justifyContent: "flex-end",
+      marginBottom: 20,
+    },
 
-  quickText: {
-    fontWeight: "700",
-    color: colors.text,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 16,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: colors.buttonText,
-    fontWeight: "700",
-    fontSize: 16,
-  },
-});
+    glassIcon: {
+      fontSize: 26,
+      marginBottom: 6,
+    },
+
+    bottleIcon: {
+      alignSelf: "center",
+      marginVertical: 20,
+    },
+
+    quickTitle: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: colors.text,
+      textAlign: "center",
+    },
+
+    quickSubtitle: {
+      fontSize: 12,
+      color: colors.secondaryText,
+      marginTop: 3,
+      textAlign: "center",
+    },
+
+    quick: {
+      width: 85,
+      paddingVertical: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: "center",
+    },
+
+    fill: {
+      width: "100%",
+      backgroundColor: "#3BA7FF",
+    },
+
+    value: {
+      fontSize: 32,
+      fontWeight: "700",
+      textAlign: "center",
+      color: colors.text,
+    },
+
+    goal: {
+      textAlign: "center",
+      color: colors.secondaryText,
+      marginBottom: 25,
+    },
+
+    row: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      rowGap: 12,
+      marginBottom: 20,
+    },
+
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 20,
+      color: colors.text,
+      backgroundColor: colors.card,
+    },
+
+    button: {
+      backgroundColor: colors.primary,
+      borderRadius: 14,
+      padding: 16,
+      alignItems: "center",
+    },
+
+    buttonText: {
+      color: colors.buttonText,
+      fontWeight: "700",
+      fontSize: 16,
+    },
+  });

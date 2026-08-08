@@ -178,7 +178,9 @@ export const createStyles = (colors: any) =>
       fontSize: 15,
       color: colors.text,
     },
-
+    buttonDisabled: {
+      opacity: 0.6,
+    },
     passwordContainer: {
       flexDirection: "row",
       alignItems: "center",

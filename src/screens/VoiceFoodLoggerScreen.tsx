@@ -24,7 +24,7 @@ export default function VoiceFoodLoggerScreen() {
   const finalTranscriptRef = useRef("");
   const transcriptRef = useRef("");
   const [isListening, setIsListening] = useState(false);
-
+  const lastFinalRef = useRef("");
   const [transcript, setTranscript] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -51,54 +51,69 @@ export default function VoiceFoodLoggerScreen() {
 
     if (!result) return;
 
-    const text = result.transcript;
+    const text = result.transcript.trim();
 
-    if (text) {
-      if (result.isFinal) {
-        // Save confirmed speech
-        finalTranscriptRef.current =
-          `${finalTranscriptRef.current} ${text}`.trim();
+    if (!text) return;
 
-        setTranscript(finalTranscriptRef.current);
-      } else {
-        // Show live temporary speech
-        setTranscript(`${finalTranscriptRef.current} ${text}`.trim());
+    if (result.isFinal) {
+      if (text !== lastFinalRef.current) {
+        lastFinalRef.current = text;
+
+        finalTranscriptRef.current = (
+          finalTranscriptRef.current +
+          " " +
+          text
+        ).trim();
       }
+
+      setTranscript(finalTranscriptRef.current);
+    } else {
+      setTranscript(`${finalTranscriptRef.current} ${text}`.trim());
     }
   });
 
   useSpeechRecognitionEvent("end", () => {
+    console.log("Speech recognition ended");
     setIsListening(false);
-
-    if (transcript) {
-      sendToBackend(transcript);
-    }
   });
-
   useSpeechRecognitionEvent("error", (event) => {
-    console.log("Speech recognition error:", event);
-
+    console.log("Speech Error:", event);
     setIsListening(false);
   });
 
   const startListening = async () => {
-    finalTranscriptRef.current = "";
+    try {
+      finalTranscriptRef.current = "";
+      lastFinalRef.current = "";
 
-    setTranscript("");
+      setTranscript("");
 
-    await ExpoSpeechRecognitionModule.start({
-      lang: "en-US",
-      interimResults: true,
-      continuous: true,
-    });
+      await ExpoSpeechRecognitionModule.start({
+        lang: "en-US",
+        interimResults: true,
+        continuous: true,
+      });
 
-    setIsListening(true);
+      setIsListening(true);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const stopListening = async () => {
-    await ExpoSpeechRecognitionModule.stop();
+    try {
+      await ExpoSpeechRecognitionModule.stop();
 
-    setIsListening(false);
+      setIsListening(false);
+
+      const finalText = finalTranscriptRef.current.trim();
+
+      if (finalText.length > 0) {
+        await sendToBackend(finalText);
+      }
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const sendToBackend = async (text: string) => {

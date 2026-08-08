@@ -16,7 +16,7 @@ export const createStyles = (colors: any) =>
     },
 
     header: {
-      marginTop: 60,
+      marginTop: 20,
       marginBottom: 25,
       flexDirection: "row",
       justifyContent: "space-between",

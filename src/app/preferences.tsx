@@ -2,12 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Moon, Smartphone, Sun } from "lucide-react-native";
 import React from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../context/ThemeContext";
 
 export default function PreferencesScreen() {
@@ -38,22 +33,11 @@ export default function PreferencesScreen() {
     >
       <View style={styles.left}>
         {icon}
-        <Text
-          style={[
-            styles.optionText,
-            { color: colors.text },
-          ]}
-        >
-          {title}
-        </Text>
+        <Text style={[styles.optionText, { color: colors.text }]}>{title}</Text>
       </View>
 
       {theme === value && (
-        <Ionicons
-          name="checkmark-circle"
-          size={24}
-          color={colors.primary}
-        />
+        <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
       )}
     </TouchableOpacity>
   );
@@ -71,11 +55,7 @@ export default function PreferencesScreen() {
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons
-            name="arrow-back"
-            size={28}
-            color={colors.text}
-          />
+          <Ionicons name="arrow-back" size={28} color={colors.text} />
         </TouchableOpacity>
 
         <Text
@@ -108,34 +88,19 @@ export default function PreferencesScreen() {
       <Option
         title="Light"
         value="light"
-        icon={
-          <Sun
-            size={22}
-            color={colors.primary}
-          />
-        }
+        icon={<Sun size={22} color={colors.primary} />}
       />
 
       <Option
         title="Dark"
         value="dark"
-        icon={
-          <Moon
-            size={22}
-            color={colors.text}
-          />
-        }
+        icon={<Moon size={22} color={colors.text} />}
       />
 
       <Option
         title="System Default"
         value="system"
-        icon={
-          <Smartphone
-            size={22}
-            color={colors.secondaryText}
-          />
-        }
+        icon={<Smartphone size={22} color={colors.secondaryText} />}
       />
     </View>
   );
@@ -145,7 +110,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 15,
   },
 
   header: {
