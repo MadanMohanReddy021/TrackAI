@@ -1,4 +1,4 @@
-import { useTheme } from "@/context/ThemeContext";
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { router } from "expo-router";
@@ -17,76 +17,140 @@ import {
   useSpeechRecognitionEvent,
 } from "expo-speech-recognition";
 
-import { Ionicons } from "@expo/vector-icons";
-
+import { useTheme } from "@/context/ThemeContext";
 import BASE_URL from "@/storage/ipAdress";
+
 export default function VoiceFoodLoggerScreen() {
-  const finalTranscriptRef = useRef("");
-  const transcriptRef = useRef("");
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
+
   const [isListening, setIsListening] = useState(false);
-  const lastFinalRef = useRef("");
+  const [loading, setLoading] = useState(false);
   const [transcript, setTranscript] = useState("");
 
-  const [loading, setLoading] = useState(false);
+  // Stores only final speech results
+  const finalTranscriptRef = useRef("");
 
+  // Prevent duplicate final results
+  const lastFinalRef = useRef("");
+
+  /*
+   * Request speech recognition permission
+   */
   useEffect(() => {
-    async function setup() {
-      const permission =
-        await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    const setup = async () => {
+      try {
+        const permission =
+          await ExpoSpeechRecognitionModule.requestPermissionsAsync();
 
-      console.log("Speech permission", permission);
-    }
+        console.log("Speech permission", permission);
+      } catch (error) {
+        console.log("Speech permission error:", error);
+      }
+    };
 
     setup();
   }, []);
 
   /*
-    Live speech updates
-  */
-  const { colors } = useTheme();
-
-  const styles = createStyles(colors);
+   * Speech recognition result
+   */
   useSpeechRecognitionEvent("result", (event) => {
-    const result = event.results?.[0];
+    console.log("Speech result event:", event);
 
-    if (!result) return;
+    const results = event.results;
 
-    const text = result.transcript.trim();
+    if (!results || results.length === 0) {
+      return;
+    }
 
-    if (!text) return;
+    // Get the latest recognized result
+    const result = results[results.length - 1];
 
-    if (result.isFinal) {
-      if (text !== lastFinalRef.current) {
-        lastFinalRef.current = text;
+    const text = result?.transcript?.trim();
 
-        finalTranscriptRef.current = (
-          finalTranscriptRef.current +
-          " " +
-          text
-        ).trim();
+    if (!text) {
+      return;
+    }
+
+    console.log("Recognized text:", text);
+    console.log("Is final:", event.isFinal);
+
+    /*
+     * FINAL RESULT
+     */
+    if (event.isFinal) {
+      console.log("FINAL:", text);
+
+      // Prevent exact duplicate
+      if (text === lastFinalRef.current) {
+        return;
+      }
+
+      lastFinalRef.current = text;
+
+      const currentFinal = finalTranscriptRef.current.trim();
+
+      /*
+       * Handle cumulative results.
+       */
+      if (!currentFinal) {
+        finalTranscriptRef.current = text;
+      } else if (text.startsWith(currentFinal)) {
+        // Example:
+        // current = "I ate two"
+        // new     = "I ate two eggs"
+        finalTranscriptRef.current = text;
+      } else if (currentFinal.startsWith(text)) {
+        // Ignore shorter duplicate
+        return;
+      } else {
+        // New independent sentence
+        finalTranscriptRef.current = `${currentFinal} ${text}`.trim();
       }
 
       setTranscript(finalTranscriptRef.current);
+
+      console.log("FINAL TRANSCRIPT:", finalTranscriptRef.current);
     } else {
+      /*
+       * INTERIM RESULT
+       */
       setTranscript(`${finalTranscriptRef.current} ${text}`.trim());
     }
   });
 
+  /*
+   * Speech recognition ended
+   */
   useSpeechRecognitionEvent("end", () => {
     console.log("Speech recognition ended");
-    setIsListening(false);
-  });
-  useSpeechRecognitionEvent("error", (event) => {
-    console.log("Speech Error:", event);
+
     setIsListening(false);
   });
 
+  /*
+   * Speech recognition error
+   */
+  useSpeechRecognitionEvent("error", (event) => {
+    console.log("Speech Error:", event);
+
+    setIsListening(false);
+  });
+
+  /*
+   * Start speech recognition
+   */
   const startListening = async () => {
     try {
       finalTranscriptRef.current = "";
       lastFinalRef.current = "";
 
       setTranscript("");
+      setIsListening(true);
+
+      console.log("Starting speech recognition...");
 
       await ExpoSpeechRecognitionModule.start({
         lang: "en-US",
@@ -94,28 +158,52 @@ export default function VoiceFoodLoggerScreen() {
         continuous: true,
       });
 
-      setIsListening(true);
-    } catch (err) {
-      console.log(err);
+      console.log("Speech recognition started");
+    } catch (error) {
+      console.log("Start speech error:", error);
+
+      setIsListening(false);
     }
   };
 
+  /*
+   * Stop speech recognition
+   */
   const stopListening = async () => {
     try {
+      console.log("Stopping speech recognition...");
+
       await ExpoSpeechRecognitionModule.stop();
 
       setIsListening(false);
 
-      const finalText = finalTranscriptRef.current.trim();
+      // Give the final event time to update
+      setTimeout(async () => {
+        const finalText = finalTranscriptRef.current.trim();
 
-      if (finalText.length > 0) {
+        console.log("=================================");
+        console.log("FINAL COMPLETE TEXT:", finalText);
+        console.log("=================================");
+
+        if (!finalText) {
+          console.log("No speech text detected");
+          return;
+        }
+
         await sendToBackend(finalText);
-      }
-    } catch (err) {
-      console.log(err);
+
+        console.log("Sent to backend:", finalText);
+      }, 500);
+    } catch (error) {
+      console.log("Stop speech error:", error);
+
+      setIsListening(false);
     }
   };
 
+  /*
+   * Send food text to backend
+   */
   const sendToBackend = async (text: string) => {
     try {
       setLoading(true);
@@ -123,19 +211,20 @@ export default function VoiceFoodLoggerScreen() {
       const userid = await AsyncStorage.getItem("userid");
 
       console.log("User ID:", userid);
+
       if (!userid) {
         console.log("User ID not found");
         return;
       }
 
+      console.log("Sending food text:", text);
+
       const response = await axios.post(
         `${BASE_URL}/analyze-food`,
-
         {
           foodName: text,
           userid: userid,
         },
-
         {
           headers: {
             "Content-Type": "application/json",
@@ -153,7 +242,7 @@ export default function VoiceFoodLoggerScreen() {
         },
       });
     } catch (error: any) {
-      console.log("Backend error", error.response?.data || error.message);
+      console.log("Backend error:", error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -161,59 +250,56 @@ export default function VoiceFoodLoggerScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.overlay}>
-        {/* Header */}
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={28} color={colors.text} />
+        </TouchableOpacity>
 
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons
-              name="volume-mute-outline"
-              size={28}
-              color={colors.text}
-            />
-          </TouchableOpacity>
+        <Text style={styles.title}>Voice Food Logger</Text>
 
-          <Text style={styles.title}>Voice Food Logger</Text>
-
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons
-              name="volume-mute-outline"
-              size={28}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Text Area */}
-
-        <View style={styles.center}>
-          <View style={styles.textBox}>
-            <Text style={styles.textTitle}>Tell me what you ate</Text>
-
-            <ScrollView>
-              <Text style={styles.transcript}>
-                {transcript || "Your speech will appear here..."}
-              </Text>
-            </ScrollView>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.micButton, isListening && styles.activeMic]}
-            onPress={isListening ? stopListening : startListening}
-          >
-            <Ionicons
-              name={isListening ? "stop" : "mic"}
-              size={50}
-              color={colors.text}
-            />
-          </TouchableOpacity>
-
-          <Text style={styles.status}>
-            {isListening ? "Listening..." : "Tap microphone to speak"}
-          </Text>
-        </View>
+        <View style={styles.headerSpacer} />
       </View>
 
+      {/* Main Content */}
+      <View style={styles.center}>
+        {/* Speech Text Box */}
+        <View style={styles.textBox}>
+          <Text style={styles.textTitle}>Tell me what you ate</Text>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}
+          >
+            <Text style={styles.transcript}>
+              {transcript || "Your speech will appear here..."}
+            </Text>
+          </ScrollView>
+        </View>
+
+        {/* Microphone Button */}
+        <TouchableOpacity
+          style={[styles.micButton, isListening && styles.activeMic]}
+          onPress={isListening ? stopListening : startListening}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name={isListening ? "stop" : "mic"}
+            size={50}
+            color={colors.text}
+          />
+        </TouchableOpacity>
+
+        {/* Status */}
+        <Text style={styles.status}>
+          {isListening ? "Listening..." : "Tap microphone to speak"}
+        </Text>
+      </View>
+
+      {/* Loading Overlay */}
       {loading && (
         <View style={styles.loading}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -221,12 +307,13 @@ export default function VoiceFoodLoggerScreen() {
           <Text style={styles.loadingText}>Processing food...</Text>
         </View>
       )}
-
-      {/* Backend Result */}
     </View>
   );
 }
 
+/*
+ * Styles
+ */
 const createStyles = (colors: any) =>
   StyleSheet.create({
     container: {
@@ -244,14 +331,31 @@ const createStyles = (colors: any) =>
       paddingHorizontal: 20,
 
       flexDirection: "row",
-      justifyContent: "space-between",
+      alignItems: "center",
+    },
+
+    backButton: {
+      width: 45,
+      height: 45,
+      borderRadius: 22.5,
+
+      backgroundColor: colors.card,
+
+      justifyContent: "center",
       alignItems: "center",
     },
 
     title: {
+      flex: 1,
+      textAlign: "center",
+
       color: colors.text,
       fontSize: 26,
       fontWeight: "700",
+    },
+
+    headerSpacer: {
+      width: 45,
     },
 
     iconButton: {
@@ -270,7 +374,6 @@ const createStyles = (colors: any) =>
       flex: 1,
 
       justifyContent: "center",
-
       alignItems: "center",
 
       paddingHorizontal: 20,
@@ -281,7 +384,6 @@ const createStyles = (colors: any) =>
       height: 250,
 
       borderWidth: 2,
-
       borderColor: colors.primary,
 
       borderRadius: 25,
@@ -295,17 +397,19 @@ const createStyles = (colors: any) =>
       color: colors.primary,
 
       fontSize: 22,
-
       fontWeight: "700",
 
       marginBottom: 20,
+    },
+
+    scrollView: {
+      flex: 1,
     },
 
     transcript: {
       color: colors.text,
 
       fontSize: 20,
-
       lineHeight: 30,
     },
 
@@ -313,7 +417,6 @@ const createStyles = (colors: any) =>
       marginTop: 50,
 
       width: 100,
-
       height: 100,
 
       borderRadius: 50,
@@ -321,13 +424,10 @@ const createStyles = (colors: any) =>
       backgroundColor: colors.card,
 
       justifyContent: "center",
-
       alignItems: "center",
 
       shadowColor: colors.primary,
-
       shadowOpacity: 0.25,
-
       shadowRadius: 10,
 
       shadowOffset: {
@@ -356,7 +456,6 @@ const createStyles = (colors: any) =>
       backgroundColor: "rgba(0,0,0,0.7)",
 
       justifyContent: "center",
-
       alignItems: "center",
     },
 

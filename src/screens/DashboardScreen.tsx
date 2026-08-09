@@ -1,14 +1,16 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Animated,
   ScrollView,
   Text,
   TouchableOpacity,
   useColorScheme,
-  View
+  View,
 } from "react-native";
 import {
   initialize,
@@ -19,6 +21,7 @@ import AddMenu from "../components/dashboard/AddMenu";
 import CalorieCard from "../components/dashboard/CalorieCard";
 import MacroCard from "../components/dashboard/MacroCard";
 import { useTheme } from "../context/ThemeContext";
+import BASE_URL from "../storage/ipAdress";
 import { createStyles } from "../styles/dashboardStyles";
 import { DarkTheme, LightTheme } from "../theme/colors";
 import FoodLogItem from "./FoodLogItem";
@@ -98,6 +101,29 @@ type FoodLog = {
 
 const DashboardScreen = () => {
   const [steps, setSteps] = useState(0);
+  const [marqueeMessage, setMarqueeMessage] = useState("");
+  const [showMarquee, setShowMarquee] = useState(false);
+  useEffect(() => {
+    const fetchMarqueeMessage = async () => {
+      try {
+        const response = await axios.get(`${BASE_URL}/notice`);
+
+        console.log("Marquee API:", response.data);
+
+        if (response.data?.success === true) {
+          setMarqueeMessage(response.data.message || "");
+          setShowMarquee(!!response.data.message);
+        } else {
+          setShowMarquee(false);
+        }
+      } catch (error) {
+        console.log("Marquee API error:", error);
+        setShowMarquee(false);
+      }
+    };
+
+    fetchMarqueeMessage();
+  }, []);
   //----------------Add water-------------------------------------------------------------------------------------------
 
   //----------------------------------------------------------------------------------------------------------------
@@ -428,6 +454,13 @@ const DashboardScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>TrackAI</Text>
+      {showMarquee && marqueeMessage && (
+        <View style={styles.marqueeContainer}>
+          <Animated.Text style={styles.marqueeText}>
+            {marqueeMessage}
+          </Animated.Text>
+        </View>
+      )}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

@@ -63,39 +63,39 @@ export default function AuthScreen() {
   };
   const handleGoogleLogin = async () => {
     try {
-      // Check Google Play Services
       try {
         await GoogleSignin.hasPlayServices({
           showPlayServicesUpdateDialog: true,
         });
-        console.log("Google Play Services available");
       } catch (error) {
+        console.log("STEP 1 ERROR:", error);
+
         alert(
           "Google Play Services are not available. Please update Google Play Services and try again.",
         );
+
         return;
       }
 
-      // Check if another Google account is already signed in
       try {
         const currentUser = await GoogleSignin.getCurrentUser();
-        console.log("Current User:", currentUser);
 
         if (currentUser) {
           await GoogleSignin.signOut();
         }
       } catch (error) {
-        console.log("Google account check error:", error);
+        console.log("STEP 2 ERROR:", error);
       }
 
-      // Google Sign In
+      // ================================
+      // 3. GOOGLE SIGN IN
+      // ================================
       let signInResult;
 
       try {
         signInResult = await GoogleSignin.signIn();
-        console.log("Google Sign In:", signInResult);
-      } catch (error: any) {
-        console.log("Google Sign In Error:", error);
+      } catch (error) {
+        console.log("STEP 3 ERROR:", error);
 
         if (error?.code === "SIGN_IN_CANCELLED") {
           alert("Google sign-in was cancelled.");
@@ -108,16 +108,20 @@ export default function AuthScreen() {
         return;
       }
 
-      // Get Google tokens
+      // ================================
+      // 4. GET GOOGLE TOKEN
+      // ================================
       let tokens;
 
       try {
         tokens = await GoogleSignin.getTokens();
       } catch (error) {
-        console.log("Google Token Error:", error);
+        console.log("STEP 4 ERROR:", error);
+
         alert(
           "Unable to get Google authentication details. Please try signing in again.",
         );
+
         return;
       }
 
@@ -125,10 +129,10 @@ export default function AuthScreen() {
 
       if (!idToken) {
         alert("Google authentication failed. No ID token was received.");
+
         return;
       }
 
-      // Send token to backend
       let backendResponse;
 
       try {
@@ -138,66 +142,85 @@ export default function AuthScreen() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            idToken,
+            idToken: idToken,
           }),
         });
       } catch (error) {
-        console.log("Google Backend Error:", error);
+        console.log("STEP 5 ERROR:", error);
 
         alert(
           "Unable to connect to the server. Please check your internet connection and try again.",
         );
+
         return;
       }
 
+      // ================================
+      // 6. READ BACKEND RESPONSE
+      // ================================
       let data;
 
       try {
         data = await backendResponse.json();
       } catch (error) {
         alert("The server returned an invalid response. Please try again.");
+
         return;
       }
 
-      console.log("Google Login Response:", data);
-
+      // ================================
+      // 7. BACKEND SUCCESS
+      // ================================
       if (backendResponse.ok) {
-        // Make sure userid exists
-        if (!data.userid && !data.userId) {
+        const userid = data.userid || data.userId;
+
+        if (!userid) {
           alert(
             "Login was successful, but the user ID was not received from the server.",
           );
+
           return;
         }
 
-        const userid = data.userid;
-
+        // ================================
+        // 8. SAVE USER ID
+        // ================================
         await AsyncStorage.setItem("userid", String(userid));
 
-        // Check user profile
+        // ================================
+        // 9. CHECK PROFILE
+        // ================================
         try {
-          const profileResponse = await fetch(
-            `${BASE_URL}/get-profile/?userid=${userid}`,
-          );
+          const profileURL = `${BASE_URL}/get-profile/?userid=${userid}`;
+
+          const profileResponse = await fetch(profileURL);
 
           const profileData = await profileResponse.json();
 
-          console.log("Profile Response:", profileData);
-
+          // ================================
+          // 10. NAVIGATION
+          // ================================
           if (profileData.success) {
             router.replace("/dashboard");
           } else {
             router.replace("/onboarding");
           }
         } catch (error) {
-          console.log("Profile Check Error:", error);
+          console.log("STEP 9 ERROR:", error);
 
           alert(
             "Google login was successful, but we could not load your profile. Please try again.",
           );
         }
       } else {
-        await GoogleSignin.signOut();
+        // ================================
+        // BACKEND FAILED
+        // ================================
+        console.log("BACKEND LOGIN FAILED:", backendResponse.status, data);
+
+        try {
+          await GoogleSignin.signOut();
+        } catch {}
 
         if (backendResponse.status === 400) {
           alert(
@@ -214,8 +237,8 @@ export default function AuthScreen() {
           alert(data.message || "Google login failed. Please try again.");
         }
       }
-    } catch (error: any) {
-      console.log("Google Login Error:", error);
+    } catch (error) {
+      console.log("FINAL GOOGLE LOGIN ERROR:", error);
 
       try {
         await GoogleSignin.signOut();

@@ -7,6 +7,28 @@ export const createStyles = (colors: any) =>
       backgroundColor: colors.background,
       paddingHorizontal: 20,
     },
+    marqueeContainer: {
+      height: 36,
+      marginHorizontal: 15,
+      marginTop: 10,
+
+      borderRadius: 18,
+
+      backgroundColor: colors.card,
+
+      borderWidth: 1,
+      borderColor: colors.primary,
+
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+
+    marqueeText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: "600",
+      paddingHorizontal: 20,
+    },
     macroProgress: {
       width: 90,
       height: 90,
@@ -475,7 +497,7 @@ export const createStyles = (colors: any) =>
 
     mainFab: {
       position: "absolute",
-      bottom: 0,
+      bottom: 25,
       right: 0,
       width: 65,
       height: 65,

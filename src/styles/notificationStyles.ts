@@ -6,6 +6,7 @@ export const createStyles = (colors: any) =>
       flex: 1,
       backgroundColor: colors.background,
       paddingHorizontal: 20,
+      paddingTop: 35,
     },
 
     loader: {

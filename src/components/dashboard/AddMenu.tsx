@@ -5,13 +5,10 @@ import { TouchableOpacity, View } from "react-native";
 
 import { useTheme } from "../../context/ThemeContext";
 import { createStyles } from "../../styles/dashboardStyles";
-import { DarkTheme, LightTheme } from "../../theme/colors";
 
 export default function AddMenu() {
   const [open, setOpen] = useState(false);
-  const { theme } = useTheme();
-
-  const colors = theme === "dark" ? DarkTheme : LightTheme;
+  const { colors } = useTheme();
 
   const styles = createStyles(colors);
   return (
