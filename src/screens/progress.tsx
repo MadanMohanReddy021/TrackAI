@@ -1,153 +1,127 @@
-import BASE_URL from "@/storage/ipAdress";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Dimensions,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { readRecords } from "react-native-health-connect";
 
-import { LineChart } from "react-native-chart-kit";
+import BASE_URL from "@/storage/ipAdress";
 
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "@/context/ThemeContext";
 import { createStyles } from "../styles/progressStyles";
 
-const width = Dimensions.get("window").width;
+import { StreakRecord } from "../components/progress/StreakBadges";
+
+import ProgressCharts from "../components/progress/ProgressCharts";
+import StepsChart, { StepLog } from "../components/progress/StepsChart";
+import StreakBadges from "../components/progress/StreakBadges";
+
+import ProgressHeader from "../components/progress/ProgressHeader";
+
+// =====================================================
+// TYPES
+// =====================================================
+
+interface WeightLog {
+  month: string;
+  weight: number | string;
+}
+
+interface NutritionLog {
+  date: string;
+  calories: number | string;
+  protein: number | string;
+  carbs: number | string;
+  fat: number | string;
+}
+
+// =====================================================
+// STREAK API RESPONSE
+// =====================================================
+
+interface StreakApiResponse {
+  data: {
+    calories?: StreakRecord[];
+    water?: StreakRecord[];
+    nutrients?: StreakRecord[];
+  };
+}
+
+// =====================================================
+// PROGRESS SCREEN
+// =====================================================
 
 export default function Progress() {
   const { colors } = useTheme();
 
   const styles = createStyles(colors);
-  const [stepLogs, setStepLogs] = useState<any[]>([]);
+  const [nutritionTargets, setNutritionTargets] = useState<NutritionTargets>({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+  });
+  // ===================================================
+  // WEIGHT
+  // ===================================================
+
+  const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
+
+  // ===================================================
+  // NUTRITION
+  // ===================================================
+
+  const [nutritionLogs, setNutritionLogs] = useState<NutritionLog[]>([]);
+
+  // ===================================================
+  // STEPS
+  // ===================================================
+
+  const [stepLogs, setStepLogs] = useState<StepLog[]>([]);
+
+  // ===================================================
+  // CALORIE STREAK
+  // ===================================================
+
+  const [calorieStreakData, setCalorieStreakData] = useState<StreakRecord[]>(
+    [],
+  );
+
+  // ===================================================
+  // WATER STREAK
+  // ===================================================
+
+  const [waterStreakData, setWaterStreakData] = useState<StreakRecord[]>([]);
+
+  // ===================================================
+  // NUTRIENT STREAK
+  // ===================================================
+
+  const [nutrientStreakData, setNutrientStreakData] = useState<StreakRecord[]>(
+    [],
+  );
+
+  // ===================================================
+  // STEPS PERMISSION
+  // ===================================================
+
   const [stepsPermissionError, setStepsPermissionError] = useState(false);
-  const loadWeeklySteps = async () => {
-    try {
-      const today = new Date();
 
-      const stepsData = [];
+  // ===================================================
+  // LOADING
+  // ===================================================
 
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-
-        date.setDate(today.getDate() - i);
-        date.setHours(0, 0, 0, 0);
-
-        const endDate = new Date(date);
-        endDate.setHours(23, 59, 59, 999);
-
-        const result = await readRecords("Steps", {
-          timeRangeFilter: {
-            operator: "between",
-            startTime: date.toISOString(),
-            endTime: endDate.toISOString(),
-          },
-        });
-
-        const totalSteps = (result.records || []).reduce(
-          (sum, item) => sum + (item.count ?? 0),
-          0,
-        );
-
-        stepsData.push({
-          date: date.toLocaleDateString("en-US", {
-            weekday: "short",
-          }),
-          steps: totalSteps,
-        });
-      }
-
-      const hasSteps = stepsData.some((item) => item.steps > 0);
-
-      if (!hasSteps) {
-        setStepsPermissionError(true);
-      } else {
-        setStepLogs(stepsData);
-      }
-    } catch (error) {
-      console.log("Steps error:", error);
-      setStepsPermissionError(true);
-    }
-  };
-
-  const [weightLogs, setWeightLogs] = useState<any[]>([
-    {
-      month: "Jan",
-      weight: 82,
-    },
-    {
-      month: "Feb",
-      weight: 80,
-    },
-    {
-      month: "Mar",
-      weight: 78,
-    },
-    {
-      month: "Apr",
-      weight: 77,
-    },
-    {
-      month: "May",
-      weight: 75,
-    },
-    {
-      month: "Jun",
-      weight: 74,
-    },
-  ]);
-  const [nutritionLogs, setNutritionLogs] = useState<any[]>([
-    {
-      calories: 2200,
-      protein: 120,
-      carbs: 250,
-      fat: 70,
-    },
-    {
-      calories: 2400,
-      protein: 130,
-      carbs: 280,
-      fat: 75,
-    },
-    {
-      calories: 2100,
-      protein: 110,
-      carbs: 230,
-      fat: 65,
-    },
-    {
-      calories: 2600,
-      protein: 140,
-      carbs: 300,
-      fat: 80,
-    },
-    {
-      calories: 2300,
-      protein: 125,
-      carbs: 260,
-      fat: 72,
-    },
-    {
-      calories: 2500,
-      protein: 135,
-      carbs: 290,
-      fat: 78,
-    },
-    {
-      calories: 2700,
-      protein: 150,
-      carbs: 320,
-      fat: 85,
-    },
-  ]);
   const [loading, setLoading] = useState(true);
 
-  const loadProgress = async () => {
+  // ===================================================
+  // LOAD PROGRESS API DATA
+  // ===================================================
+  interface NutritionTargets {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }
+  const loadProgressData = async () => {
     try {
       const userid = await AsyncStorage.getItem("userid");
 
@@ -157,42 +131,205 @@ export default function Progress() {
         return;
       }
 
-      const [weightResponse, nutritionResponse] = await Promise.all([
+      // ---------------------------------------------
+      // CALL ALL APIs
+      // ---------------------------------------------
+
+      const [
+        weightResponse,
+        nutritionResponse,
+        streakResponse,
+        profileResponse,
+      ] = await Promise.all([
         fetch(`${BASE_URL}/progress?userid=${userid}`),
 
         fetch(`${BASE_URL}/get-nutrients-range?userid=${userid}`),
+
+        fetch(`${BASE_URL}/get-streaks?userid=${userid}`),
+
+        fetch(`${BASE_URL}/get-profile?userid=${userid}`),
       ]);
 
-      const weightData = await weightResponse.json();
+      // =============================================
+      // WEIGHT
+      // =============================================
 
-      const nutritionData = await nutritionResponse.json();
+      if (weightResponse.ok) {
+        const weightData = await weightResponse.json();
 
-      setWeightLogs(weightData.weightLogs || []);
+        setWeightLogs(weightData.weightLogs || []);
+      }
+      //------------------------------------------------
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
 
-      setNutritionLogs(nutritionData.data || []);
+        const profile = profileData.data;
+
+        setNutritionTargets({
+          calories: Number(profile?.calories) || 0,
+          protein: Number(profile?.protein) || 0,
+          carbs: Number(profile?.carbs) || 0,
+          fat: Number(profile?.fat) || 0,
+        });
+      }
+      // =============================================
+      // NUTRITION
+      // =============================================
+
+      if (nutritionResponse.ok) {
+        const nutritionData = await nutritionResponse.json();
+
+        setNutritionLogs(nutritionData.data || []);
+      }
+
+      // =============================================
+      // STREAK
+      // =============================================
+
+      if (streakResponse.ok) {
+        const streakData: StreakApiResponse = await streakResponse.json();
+
+        // -------------------------------------------
+        // API FORMAT:
+        //
+        // {
+        //   data: {
+        //     calories: [...],
+        //     water: [...],
+        //     nutrients: [...]
+        //   }
+        // }
+        // -------------------------------------------
+
+        setCalorieStreakData(streakData.data?.calories || []);
+
+        setWaterStreakData(streakData.data?.water || []);
+
+        setNutrientStreakData(streakData.data?.nutrients || []);
+      }
     } catch (error) {
-      console.log("Progress loading error:", error);
-    } finally {
-      setLoading(false);
+      console.log("Progress API loading error:", error);
     }
   };
 
+  // ===================================================
+  // DATE KEY
+  // ===================================================
+
+  const getDateKey = (date: Date): string => {
+    const year = date.getFullYear();
+
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  // ===================================================
+  // LOAD LAST 7 DAYS STEPS
+  // ===================================================
+
+  const loadWeeklySteps = async () => {
+    try {
+      const today = new Date();
+
+      const stepsData: StepLog[] = [];
+
+      // ---------------------------------------------
+      // LAST 7 DAYS
+      // ---------------------------------------------
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+
+        date.setDate(today.getDate() - i);
+
+        date.setHours(0, 0, 0, 0);
+
+        const endDate = new Date(date);
+
+        endDate.setHours(23, 59, 59, 999);
+
+        // -------------------------------------------
+        // HEALTH CONNECT
+        // -------------------------------------------
+
+        const result = await readRecords("Steps", {
+          timeRangeFilter: {
+            operator: "between",
+
+            startTime: date.toISOString(),
+
+            endTime: endDate.toISOString(),
+          },
+        });
+
+        // -------------------------------------------
+        // TOTAL STEPS FOR THE DAY
+        // -------------------------------------------
+
+        const totalSteps = (result.records || []).reduce(
+          (sum, item) => sum + (item.count ?? 0),
+
+          0,
+        );
+
+        stepsData.push({
+          // IMPORTANT:
+          // Store actual date.
+          // Do NOT store only Mon/Tue/etc.
+          date: getDateKey(date),
+
+          steps: totalSteps,
+        });
+      }
+
+      // ---------------------------------------------
+      // CHECK WHETHER HEALTH CONNECT RETURNED DATA
+      // ---------------------------------------------
+
+      const hasSteps = stepsData.some((item) => item.steps > 0);
+
+      if (!hasSteps) {
+        setStepsPermissionError(true);
+
+        setStepLogs([]);
+      } else {
+        setStepsPermissionError(false);
+
+        setStepLogs(stepsData);
+      }
+    } catch (error) {
+      console.log("Health Connect steps error:", error);
+
+      setStepsPermissionError(true);
+
+      setStepLogs([]);
+    }
+  };
+
+  // ===================================================
+  // INITIAL LOAD
+  // ===================================================
+
   useEffect(() => {
-    loadProgress();
-    loadWeeklySteps();
+    const loadData = async () => {
+      setLoading(true);
+
+      try {
+        await Promise.all([loadProgressData(), loadWeeklySteps()]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
-  const createChart = (labels: any[], values: any[]) => ({
-    labels,
-
-    datasets: [
-      {
-        data: values.map(Number),
-        strokeWidth: 3,
-        color: () => "#FFFFFF",
-      },
-    ],
-  });
+  // ===================================================
+  // LOADING SCREEN
+  // ===================================================
 
   if (loading) {
     return (
@@ -202,159 +339,89 @@ export default function Progress() {
     );
   }
 
-  const weightChart = {
-    labels: weightLogs.map((item) => item.month),
-
-    datasets: [
-      {
-        data: weightLogs.map((item) => Number(item.weight)),
-
-        strokeWidth: 4,
-
-        color: () => colors.progress,
-
-        fillShadowGradient: colors.card,
-        fillShadowGradientOpacity: 0,
-      },
-    ],
-  };
-  const nutritionChart = {
-    labels: [" "], // blank label
-
-    datasets: [
-      {
-        data: nutritionLogs.length
-          ? nutritionLogs.map((item) => Number(item.calories) || 0)
-          : [0],
-        color: () => "#FF5252",
-        strokeWidth: 3,
-      },
-      {
-        data: nutritionLogs.length
-          ? nutritionLogs.map((item) => Number(item.protein) || 0)
-          : [0],
-        color: () => "#4CAF50",
-        strokeWidth: 3,
-      },
-      {
-        data: nutritionLogs.length
-          ? nutritionLogs.map((item) => Number(item.carbs) || 0)
-          : [0],
-        color: () => "#2196F3",
-        strokeWidth: 3,
-      },
-      {
-        data: nutritionLogs.length
-          ? nutritionLogs.map((item) => Number(item.fat) || 0)
-          : [0],
-        color: () => "#FFC107",
-        strokeWidth: 3,
-      },
-    ],
-
-    legend: ["Calories", "Protein", "Carbs", "Fat"],
-  };
-  const stepsChart = {
-    labels: stepLogs.map((item) => item.date),
-
-    datasets: [
-      {
-        data: stepLogs.map((item) => item.steps),
-
-        strokeWidth: 3,
-
-        color: () => colors.progress,
-      },
-    ],
-  };
-  function renderGraph(
-    title: string,
-
-    data: any,
-
-    suffix: string,
-  ) {
-    return (
-      <View style={styles.card}>
-        <Text style={styles.title}>{title}</Text>
-
-        <LineChart
-          data={data}
-          width={width - 70}
-          height={220}
-          yAxisSuffix={suffix}
-          bezier
-          withInnerLines={false}
-          withOuterLines={false}
-          withVerticalLines={false}
-          withHorizontalLines={false}
-          withShadow={false}
-          withDots={true}
-          chartConfig={{
-            backgroundGradientFrom: colors.card,
-            backgroundGradientTo: colors.card,
-
-            decimalPlaces: 1,
-
-            color: (opacity = 1) => `rgba(75,201,169,${opacity})`,
-
-            labelColor: () => colors.secondaryText,
-
-            propsForDots: {
-              r: "5",
-              strokeWidth: "2",
-              stroke: colors.progress,
-              fill: colors.progress,
-            },
-
-            // Remove graph fill
-            fillShadowGradient: colors.card,
-            fillShadowGradientOpacity: 0,
-          }}
-          style={{
-            borderRadius: 16,
-          }}
-        />
-      </View>
-    );
-  }
+  // ===================================================
+  // MAIN UI
+  // ===================================================
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* =============================================
+          HEADER
+      ============================================= */}
 
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={26} color={colors.text} />
-        </TouchableOpacity>
+      <ProgressHeader />
 
-        <Text style={styles.headerTitle}>Progress</Text>
+      {/* =============================================
+          CONTENT
+      ============================================= */}
 
-        <View style={{ width: 40 }} />
-      </View>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ===========================================
+            STREAKS + BADGES
+        =========================================== */}
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {renderGraph(
-          "Weight Progress",
+        <StreakBadges
+          calorieStreakData={calorieStreakData}
+          waterStreakData={waterStreakData}
+          nutrientStreakData={nutrientStreakData}
+          stepLogs={stepLogs}
+        />
 
-          weightChart,
+        {/* ===========================================
+            WEIGHT + CALORIES
+        =========================================== */}
 
-          " kg",
-        )}
-        {renderGraph("Nutrition Progress", nutritionChart, "")}{" "}
+        <ProgressCharts
+          weightLogs={weightLogs}
+          nutritionLogs={nutritionLogs}
+          nutritionTargets={nutritionTargets}
+        />
+        {/* ===========================================
+            WEEKLY STEPS
+        =========================================== */}
+
         {stepsPermissionError ? (
-          <View style={styles.card}>
-            <Text style={styles.title}>Steps unavailable</Text>
+          <View
+            style={[
+              styles.card,
+              {
+                backgroundColor: colors.card,
+              },
+            ]}
+          >
+            <View
+              style={{
+                paddingVertical: 10,
+              }}
+            >
+              <Text
+                style={[
+                  styles.title,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                Steps unavailable
+              </Text>
 
-            <Text style={styles.secondaryText}>
-              Please check Health Connect permissions
-            </Text>
+              <Text
+                style={[
+                  styles.secondaryText,
+                  {
+                    color: colors.secondaryText,
+                  },
+                ]}
+              >
+                Please check Health Connect permissions
+              </Text>
+            </View>
           </View>
         ) : (
-          renderGraph("Weekly Steps", stepsChart, "")
+          <StepsChart stepLogs={stepLogs} />
         )}
       </ScrollView>
     </View>

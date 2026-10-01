@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 
 import { useTheme } from "../../context/ThemeContext";
 import { createStyles } from "../../styles/dashboardStyles";
@@ -10,10 +10,11 @@ type Props = {
   title: MacroType;
   value: number;
   target: number;
+  loading?: boolean;
 };
 
-const MacroCard = ({ title, value, target }: Props) => {
-  const percent = Math.min(100, (value / target) * 100);
+const MacroCard = ({ title, value, target, loading }: Props) => {
+  const percent = loading ? 0 : Math.min(100, (value / target) * 100);
   const macroIcons = {
     Protein: "food-drumstick",
     Carbs: "bread-slice",
@@ -54,9 +55,19 @@ const MacroCard = ({ title, value, target }: Props) => {
             {macroEmoji[title as keyof typeof macroEmoji]}
           </Text>
 
-          <Text style={styles.circleValue}>{Math.round(value)}g</Text>
+          {loading ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.primary}
+              style={{ marginTop: 2 }}
+            />
+          ) : (
+            <>
+              <Text style={styles.circleValue}>{Math.round(value)}g</Text>
 
-          <Text style={styles.circleTarget}>/ {target}g</Text>
+              <Text style={styles.circleTarget}>/ {target}g</Text>
+            </>
+          )}
         </View>
       </View>
     </View>

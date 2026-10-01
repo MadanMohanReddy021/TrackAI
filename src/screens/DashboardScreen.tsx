@@ -4,6 +4,7 @@ import axios from "axios";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   ScrollView,
@@ -144,6 +145,7 @@ const DashboardScreen = () => {
 
   const styles = useMemo(() => createStyles(colors), [colors]);
   // ---------------- STATES ----------------
+  const [dateColors, setDateColors] = useState<Record<string, string>>({});
 
   const [profile, setProfile] = useState<Profile | null>(null);
 
@@ -185,27 +187,28 @@ const DashboardScreen = () => {
     }
   }, [profile]);
   const [loading, setLoading] = useState(true);
-  // useEffect(() => {
-  //   const loadProfile = async () => {
-  //     try {
-  //       const storedProfile = await AsyncStorage.getItem("profile");
 
-  //       if (storedProfile) {
-  //         const profile = JSON.parse(storedProfile);
+  useEffect(() => {
+    const loadCachedProfile = async () => {
+      try {
+        const storedProfile = await AsyncStorage.getItem("profile");
+        if (storedProfile) {
+          const parsed = JSON.parse(storedProfile);
+          const data = parsed?.data ?? parsed;
+          if (data && (data.userid || data.full_name)) {
+            setProfile(data);
+            if (data.full_name) {
+              setProfileName(data.full_name);
+            }
+          }
+        }
+      } catch (error) {
+        console.log("Profile cache error:", error);
+      }
+    };
 
-  //         setProfileName(
-  //           profile.name || profile.full_name || ""
-  //         );
-  //       }
-
-  //     } catch (error) {
-  //       console.log("Profile storage error:", error);
-  //     }
-  //   };
-
-  //   loadProfile();
-
-  // }, []);
+    loadCachedProfile();
+  }, []);
 
   //---------------- LOAD HEALTH DATA ----------------
   // useEffect(() => {
@@ -281,6 +284,127 @@ const DashboardScreen = () => {
 
   // }, []);
   // ---------------- LOAD DATA ----------------
+  //-------------------date color -------------------------------
+
+  const loadDateColors = async () => {
+    try {
+      const userid = await AsyncStorage.getItem("userid");
+
+      if (!userid) return;
+
+      // =================================================
+      // DEFAULT
+      // =================================================
+
+      const colors: Record<string, string> = {};
+
+      // =================================================
+      // CALL PROFILE + NUTRIENT RANGE TOGETHER
+      // =================================================
+
+      const [profileResponse, nutrientResponse] = await Promise.all([
+        fetch(`${BASE_URL}/get-profile?userid=${userid}`),
+
+        fetch(`${BASE_URL}/get-nutrients-range?userid=${userid}`),
+      ]);
+
+      // =================================================
+      // PROFILE
+      // =================================================
+
+      if (!profileResponse.ok) {
+        console.log("Profile API failed");
+        return;
+      }
+
+      const profileData = await profileResponse.json();
+
+      const calorieTarget = Number(profileData?.data?.calories);
+
+      if (!calorieTarget || calorieTarget <= 0) {
+        console.log("Invalid calorie target");
+
+        return;
+      }
+
+      // =================================================
+      // NUTRIENT RANGE
+      // =================================================
+
+      if (!nutrientResponse.ok) {
+        console.log("Nutrient range API failed");
+
+        return;
+      }
+
+      const nutrientData = await nutrientResponse.json();
+
+      const dailyData = nutrientData?.data;
+
+      if (!Array.isArray(dailyData)) {
+        console.log("Invalid nutrient range data");
+
+        return;
+      }
+
+      // =================================================
+      // CALCULATE DATE COLORS
+      // =================================================
+
+      dailyData.forEach((item: any) => {
+        if (!item.date) return;
+
+        const consumedCalories = Number(item.calories);
+
+        if (Number.isNaN(consumedCalories)) {
+          return;
+        }
+
+        // -----------------------------------------------
+        // DATE
+        // -----------------------------------------------
+
+        const date = item.date.substring(0, 10);
+
+        // -----------------------------------------------
+        // PERCENTAGE OF TARGET
+        // -----------------------------------------------
+
+        const percentage = (consumedCalories / calorieTarget) * 100;
+
+        // -----------------------------------------------
+        // COLOR
+        // -----------------------------------------------
+
+        let color: string;
+
+        if (percentage >= 95) {
+          // Target achieved / exceeded
+          color = "#4CAF50";
+        } else if (percentage >= 70) {
+          // Getting close
+          color = "#FFC107";
+        } else {
+          // Far below target
+          color = "#FF5252";
+        }
+
+        colors[date] = color;
+      });
+
+      // =================================================
+      // SAVE
+      // =================================================
+
+      setDateColors(colors);
+
+      console.log("Calorie target:", calorieTarget);
+
+      console.log("Calculated date colors:", colors);
+    } catch (error) {
+      console.log("Date colors error:", error);
+    }
+  };
   //----------------------------------------------- getting steps from the health connect--------------------------------------------------------------
 
   useEffect(() => {
@@ -339,6 +463,9 @@ const DashboardScreen = () => {
   useEffect(() => {
     loadDashboard(selectedDate);
   }, [selectedDate]);
+  useEffect(() => {
+    loadDateColors();
+  }, []);
 
   const loadDashboard = async (date: string) => {
     try {
@@ -351,38 +478,50 @@ const DashboardScreen = () => {
         router.replace("/auth");
         return;
       }
-      const nutrientsResponse = await getNutrients(userid, date);
-      console.log("Nutrients Response:", nutrientsResponse);
-      const [profile, foodLogs, water, steps] = await Promise.all([
-        getProfile(userid),
-        getFoodLogs(userid, date),
-        getWater(userid, date),
-        getSteps(userid, date),
-      ]);
 
-      if (!profile?.data || !profile.data.userid) {
+      const [nutrientsResponse, profileRes, foodLogs, waterVal, stepsVal] =
+        await Promise.all([
+          getNutrients(userid, date),
+          getProfile(userid),
+          getFoodLogs(userid, date),
+          getWater(userid, date),
+          getSteps(userid, date),
+        ]);
+
+      if (profileRes?.data && profileRes.data.userid) {
+        setProfile(profileRes.data);
+      } else if (!profile && (!profileRes || !profileRes.data)) {
         router.replace("/onboarding");
         return;
       }
 
-      setProfile(profile.data);
-      setLogs(foodLogs);
-      setWater(water);
-      //setSteps(steps);
+      setLogs(foodLogs || []);
+      setWater(waterVal || 0);
 
       try {
-        const item = nutrientsResponse.data[0];
+        if (nutrientsResponse?.data?.[0]) {
+          const item = nutrientsResponse.data[0];
 
-        console.log("Item:", item);
+          console.log("Item:", item);
 
-        setNutrients({
-          calories: Number(item.calories),
-          protein: Number(item.protein),
-          carbs: Number(item.carbs),
-          fat: Number(item.fat),
-          fiber: Number(item.fiber),
-          sugar: Number(item.sugar),
-        });
+          setNutrients({
+            calories: Number(item.calories) || 0,
+            protein: Number(item.protein) || 0,
+            carbs: Number(item.carbs) || 0,
+            fat: Number(item.fat) || 0,
+            fiber: Number(item.fiber) || 0,
+            sugar: Number(item.sugar) || 0,
+          });
+        } else {
+          setNutrients({
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            fiber: 0,
+            sugar: 0,
+          });
+        }
       } catch (e) {
         console.error("Error reading nutrients:", e);
       }
@@ -421,36 +560,6 @@ const DashboardScreen = () => {
   const fiberTarget = Number(profile?.fiber) || 35;
 
   const sugarTarget = Number(profile?.sugar) || 30;
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.skeletonHeader} />
-
-        <View style={styles.skeletonCard}>
-          <View style={styles.skeletonCircle} />
-
-          <View style={styles.skeletonContent}>
-            <View style={styles.skeletonLineLarge} />
-            <View style={styles.skeletonLineSmall} />
-          </View>
-        </View>
-
-        <View style={styles.skeletonSectionTitle} />
-
-        <View style={styles.skeletonCard}>
-          <View style={styles.skeletonLineLarge} />
-          <View style={styles.skeletonLineMedium} />
-          <View style={styles.skeletonLineSmall} />
-        </View>
-
-        <View style={styles.skeletonCard}>
-          <View style={styles.skeletonLineLarge} />
-          <View style={styles.skeletonLineMedium} />
-        </View>
-      </View>
-    );
-  }
   return (
     <View style={styles.container}>
       <Text style={styles.title}>TrackAI</Text>
@@ -477,49 +586,65 @@ const DashboardScreen = () => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.dateContainer}
         >
-          {dates.map((item) => (
-            <TouchableOpacity
-              key={item.fullDate}
-              onPress={() => setSelectedDate(item.fullDate)}
-              style={[
-                styles.dateCard,
-                {
-                  backgroundColor:
-                    selectedDate === item.fullDate
-                      ? colors.primary
-                      : colors.card,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.day,
-                  {
-                    color:
-                      selectedDate === item.fullDate
-                        ? colors.background
-                        : colors.secondaryText,
-                  },
-                ]}
-              >
-                {item.day}
-              </Text>
+          {dates.map((item) => {
+            const apiColor = dateColors[item.fullDate];
 
-              <Text
+            return (
+              <TouchableOpacity
+                key={item.fullDate}
+                onPress={() => setSelectedDate(item.fullDate)}
                 style={[
-                  styles.date,
+                  styles.dateCard,
                   {
-                    color:
+                    backgroundColor:
                       selectedDate === item.fullDate
-                        ? colors.background
-                        : colors.text,
+                        ? colors.primary
+                        : colors.card,
                   },
                 ]}
               >
-                {item.date}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                {apiColor && apiColor !== "transparent" && (
+                  <View
+                    style={{
+                      height: 5,
+                      width: "100%",
+                      backgroundColor: apiColor,
+                      position: "absolute",
+                      top: 0,
+                    }}
+                  />
+                )}
+
+                <Text
+                  style={[
+                    styles.day,
+                    {
+                      color:
+                        selectedDate === item.fullDate
+                          ? colors.background
+                          : colors.secondaryText,
+                    },
+                  ]}
+                >
+                  {item.day}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.date,
+                    {
+                      color:
+                        selectedDate === item.fullDate
+                          ? colors.background
+                          : colors.text,
+                    },
+                  ]}
+                >
+                  {item.date}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* CALORIES */}
@@ -529,6 +654,7 @@ const DashboardScreen = () => {
             <CalorieCard
               consumed={Math.round(totals.cal)}
               target={calorieTarget}
+              loading={loading}
             />
           </View>
 
@@ -548,7 +674,9 @@ const DashboardScreen = () => {
               style={[
                 styles.waterFill,
                 {
-                  height: `${Math.min((water / waterTarget) * 100, 100)}%`,
+                  height: loading
+                    ? "0%"
+                    : `${Math.min((water / waterTarget) * 100, 100)}%`,
                   backgroundColor: colors.waterfill,
                 },
               ]}
@@ -560,55 +688,86 @@ const DashboardScreen = () => {
               color={colors.primary}
             />
 
-            <Text
-              style={[
-                styles.waterAmount,
-                {
-                  color: colors.text,
-                },
-              ]}
-            >
-              {water} ml
-            </Text>
+            {loading ? (
+              <View
+                style={{
+                  height: 44,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : (
+              <>
+                <Text
+                  style={[
+                    styles.waterAmount,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  {water} ml
+                </Text>
 
-            <Text
-              style={[
-                styles.waterTarget,
-                {
-                  color: colors.secondaryText,
-                },
-              ]}
-            >
-              {(waterTarget / 1000).toFixed(2)}L/{waterTarget} ml
-            </Text>
+                <Text
+                  style={[
+                    styles.waterTarget,
+                    {
+                      color: colors.secondaryText,
+                    },
+                  ]}
+                >
+                  {(waterTarget / 1000).toFixed(2)}L/{waterTarget} ml
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
         {/* STEPS */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>🚶 Steps</Text>
 
-          <Text style={styles.bigNumber}>
-            {steps.toLocaleString()}
-
-            <Text style={styles.smallText}>
-              / {stepTarget.toLocaleString()}
-            </Text>
-          </Text>
-
-          <View style={styles.progressBackground}>
+          {loading ? (
             <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${Math.min(100, (steps / stepTarget) * 100)}%`,
-                },
-              ]}
-            />
-          </View>
+              style={{
+                paddingVertical: 16,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.leftText, { marginTop: 6 }]}>
+                Loading steps...
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.bigNumber}>
+                {steps.toLocaleString()}
 
-          <Text style={styles.leftText}>
-            {Math.max(0, stepTarget - steps).toLocaleString()} steps left
-          </Text>
+                <Text style={styles.smallText}>
+                  / {stepTarget.toLocaleString()}
+                </Text>
+              </Text>
+
+              <View style={styles.progressBackground}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${Math.min(100, (steps / stepTarget) * 100)}%`,
+                    },
+                  ]}
+                />
+              </View>
+
+              <Text style={styles.leftText}>
+                {Math.max(0, stepTarget - steps).toLocaleString()} steps left
+              </Text>
+            </>
+          )}
 
           <Text style={styles.healthNote}>
             📱 Steps are tracked automatically using your phone's step counter
@@ -636,15 +795,36 @@ const DashboardScreen = () => {
             title="Protein"
             value={totals.protein}
             target={proteinTarget}
+            loading={loading}
           />
 
-          <MacroCard title="Carbs" value={totals.carbs} target={carbTarget} />
+          <MacroCard
+            title="Carbs"
+            value={totals.carbs}
+            target={carbTarget}
+            loading={loading}
+          />
 
-          <MacroCard title="Fat" value={totals.fat} target={fatTarget} />
+          <MacroCard
+            title="Fat"
+            value={totals.fat}
+            target={fatTarget}
+            loading={loading}
+          />
 
-          <MacroCard title="Sugar" value={totals.sugar} target={sugarTarget} />
+          <MacroCard
+            title="Sugar"
+            value={totals.sugar}
+            target={sugarTarget}
+            loading={loading}
+          />
 
-          <MacroCard title="Fiber" value={totals.fiber} target={fiberTarget} />
+          <MacroCard
+            title="Fiber"
+            value={totals.fiber}
+            target={fiberTarget}
+            loading={loading}
+          />
         </ScrollView>
         <View style={styles.pagination}>
           {[0, 1, 2].map((i) => (
@@ -660,7 +840,14 @@ const DashboardScreen = () => {
           <Text style={styles.sectionTitle}>Today's Log</Text>
         </View>
 
-        {logs.length === 0 ? (
+        {loading ? (
+          <View style={styles.emptyCard}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.emptyText, { marginTop: 8 }]}>
+              Loading meals...
+            </Text>
+          </View>
+        ) : logs.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>No meals logged yet.</Text>
           </View>

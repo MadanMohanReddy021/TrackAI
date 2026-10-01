@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 
 import CircularProgress from "react-native-circular-progress-indicator";
 import { useTheme } from "../../context/ThemeContext";
@@ -7,10 +7,11 @@ import { createStyles } from "../../styles/dashboardStyles";
 interface Props {
   consumed: number;
   target: number;
+  loading?: boolean;
 }
 
-const CalorieCard = ({ consumed, target }: Props) => {
-  const percent = Math.min(100, (consumed / target) * 100);
+const CalorieCard = ({ consumed, target, loading }: Props) => {
+  const percent = loading ? 0 : Math.min(100, (consumed / target) * 100);
 
   const { colors } = useTheme();
 
@@ -33,17 +34,29 @@ const CalorieCard = ({ consumed, target }: Props) => {
         />
 
         <View style={styles.calorieTextContainer}>
-          <Text style={styles.calorieValue}>{consumed.toLocaleString()}</Text>
+          {loading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <>
+              <Text style={styles.calorieValue}>
+                {consumed.toLocaleString()}
+              </Text>
 
-          <Text style={styles.calorieTarget}>
-            / {target.toLocaleString()} kcal
-          </Text>
+              <Text style={styles.calorieTarget}>
+                / {target.toLocaleString()} kcal
+              </Text>
+            </>
+          )}
         </View>
       </View>
 
-      <Text style={styles.leftCalories}>
-        {Math.max(0, target - consumed).toLocaleString()} kcal left
-      </Text>
+      {loading ? (
+        <Text style={styles.leftCalories}>Calculating calories...</Text>
+      ) : (
+        <Text style={styles.leftCalories}>
+          {Math.max(0, target - consumed).toLocaleString()} kcal left
+        </Text>
+      )}
     </View>
   );
 };

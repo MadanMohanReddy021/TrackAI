@@ -45,34 +45,21 @@ export const getFoodLogs = async (userid: string, date: string) => {
 };
 
 export const getWater = async (userid: string, date: string) => {
-  const response = await axios.get(`${API_URL}/get-water-intake`, {
-    params: {
-      userid,
-      intake_date: date,
-    },
-  });
-
-  return response.data.data.water_ml;
-};
-
-export const getSteps = async (userid: string, date: string) => {
   try {
-    const response = await axios.get(`${API_URL}/get-steps`, {
+    const response = await axios.get(`${API_URL}/get-water-intake`, {
       params: {
         userid,
-        step_date: date,
+        intake_date: date,
       },
     });
 
-    if (response.data.success) {
-      return Number(response.data.data.steps);
-    }
-
-    return 0;
+    return response.data?.data?.water_ml ?? 0;
   } catch {
     return 0;
   }
 };
+
+export const getSteps = async (userid: string, date: string) => {};
 export const addWaterIntake = async (
   userid: string,
   intake_date: string,
