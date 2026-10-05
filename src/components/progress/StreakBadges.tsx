@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 
 import { useTheme } from "../../context/ThemeContext";
-import { createStyles } from "../../styles/progressStyles";
 
 // =====================================================
 // TYPES
@@ -145,16 +145,58 @@ const getCurrentRecordStreak = (data: StreakRecord[]) => {
   return getCurrentStreakFromDates(dates);
 };
 
-const getCurrentStepStreak = (stepLogs: StepLog[], dailyStepGoal: number) => {
-  if (dailyStepGoal <= 0) return 0;
+const getCurrentStepStreak = (
+  stepLogs: StepLog[],
+  dailyStepGoal: number,
+  savedCurrent: number,
+  savedDate: string | null,
+) => {
+  if (dailyStepGoal <= 0) {
+    return { current: savedCurrent, date: savedDate };
+  }
 
   const goalMetDates = new Set(
     stepLogs
       .filter((log) => Number(log.steps) >= dailyStepGoal)
       .map((log) => getDateKey(log.date)),
   );
+  const todayKey = getTodayKey();
+  const yesterdayKey = new Date(toUtcDay(todayKey) - 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
-  return getCurrentStreakFromDates(goalMetDates);
+  // Keep the saved streak during an unfinished day; it can continue tomorrow.
+  if (!goalMetDates.has(todayKey)) {
+    if (savedDate) return { current: savedCurrent, date: savedDate };
+
+    // Without saved state, build from yesterday and the available local logs.
+    const availableDates = new Set(
+      [...goalMetDates].filter((date) => date <= yesterdayKey),
+    );
+    return {
+      current: getCurrentStreakFromDates(availableDates),
+      date: [...availableDates].sort().pop() ?? null,
+    };
+  }
+
+  if (savedDate === todayKey) {
+    return { current: savedCurrent, date: todayKey };
+  }
+
+  if (savedDate === yesterdayKey) {
+    return { current: savedCurrent + 1, date: todayKey };
+  }
+
+  // A stale saved date may be outside the locally retained step-log window.
+  // Rebuild from the available qualifying dates rather than discarding history.
+  return {
+    current: getCurrentStreakFromDates(goalMetDates),
+    date:
+      [...goalMetDates]
+        .filter((date) => date <= todayKey)
+        .sort()
+        .pop() ?? null,
+  };
 };
 
 // =====================================================
@@ -167,15 +209,14 @@ export default function StreakBadges({
   nutrientStreakData,
   stepLogs,
 }: StreakBadgesProps) {
+  const router = useRouter();
   const { colors } = useTheme();
-  const styles = createStyles(colors);
-
-  const [showUnachieved, setShowUnachieved] = useState(false);
 
   const [dailyStepGoal, setDailyStepGoal] = useState(0);
   const [stepGoalLoaded, setStepGoalLoaded] = useState(false);
 
   const [stepCurrent, setStepCurrent] = useState(0);
+  const [stepCurrentDate, setStepCurrentDate] = useState<string | null>(null);
   const [stepBest, setStepBest] = useState(0);
   const [stepStorageLoaded, setStepStorageLoaded] = useState(false);
 
@@ -226,6 +267,9 @@ export default function StreakBadges({
         if (!cancelled) {
           setStepBest(Number(savedData.best) || 0);
           setStepCurrent(Number(savedData.current) || 0);
+          setStepCurrentDate(
+            savedData.date ? getDateKey(savedData.date) : null,
+          );
         }
       } catch (error) {
         console.warn("Could not load saved step streaks:", error);
@@ -250,19 +294,34 @@ export default function StreakBadges({
   useEffect(() => {
     if (!stepStorageLoaded || !stepGoalLoaded) return;
 
-    const current = getCurrentStepStreak(stepLogs, dailyStepGoal);
+    const result = getCurrentStepStreak(
+      stepLogs,
+      dailyStepGoal,
+      stepCurrent,
+      stepCurrentDate,
+    );
+    const { current, date } = result;
     const best = Math.max(stepBest, current);
 
     setStepCurrent(current);
+    setStepCurrentDate(date);
     setStepBest(best);
 
     AsyncStorage.setItem(
       "stepStreaks",
-      JSON.stringify({ current, best }),
+      JSON.stringify({ current, best, date }),
     ).catch((error) => {
       console.warn("Could not save step streaks:", error);
     });
-  }, [stepLogs, dailyStepGoal, stepStorageLoaded, stepGoalLoaded, stepBest]);
+  }, [
+    stepLogs,
+    dailyStepGoal,
+    stepStorageLoaded,
+    stepGoalLoaded,
+    stepBest,
+    stepCurrent,
+    stepCurrentDate,
+  ]);
 
   // ===================================================
   // CURRENT AND BEST STREAKS
@@ -273,6 +332,20 @@ export default function StreakBadges({
 
   const waterBest = getBestStreak(waterStreakData);
   const nutrientBest = getBestStreak(nutrientStreakData);
+  useEffect(() => {
+    console.log("[StreakBadges] calorie streak input", {
+      isArray: Array.isArray(calorieStreakData),
+      records: Array.isArray(calorieStreakData)
+        ? calorieStreakData.map(({ streakscore, streak_date, streak_day }) => ({
+            streakscore,
+            streak_date,
+            streak_day,
+          }))
+        : calorieStreakData,
+      calculatedCurrent: calorieCurrent,
+      calculatedBest: calorieBest,
+    });
+  }, [calorieStreakData, calorieCurrent, calorieBest]);
 
   // ===================================================
   // CREATE ALL BADGES
@@ -328,7 +401,6 @@ export default function StreakBadges({
   // ===================================================
 
   const achievedBadges = allBadges.filter((badge) => badge.achieved);
-  const unachievedBadges = allBadges.filter((badge) => !badge.achieved);
 
   // ===================================================
   // RENDER BADGE
@@ -361,245 +433,243 @@ export default function StreakBadges({
   // UI
   // ===================================================
 
+  const today = new Date();
+  const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (6 - index));
+    const key = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+    return {
+      key,
+      label: date.toLocaleDateString(undefined, { weekday: "short" }),
+    };
+  });
+  const completedDays = new Set(
+    calorieStreakData
+      .filter((item) => Number(item.streakscore) > 0 && item.streak_date)
+      .map((item) => getDateKey(item.streak_date!)),
+  );
+
   return (
-    <View
-      style={[
-        styles.progressChartCard,
-        {
-          backgroundColor: colors.card,
-          marginBottom: 16,
-        },
-      ]}
-    >
-      {/* HEADER */}
-      <View
+    <View style={{ marginBottom: 16 }}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() =>
+          router.push({
+            pathname: "/milestones",
+            params: {
+              section: "streaks",
+              calorieCurrent: String(calorieCurrent),
+              calorieBest: String(calorieBest),
+              stepCurrent: String(stepCurrent),
+              stepBest: String(stepBest),
+              waterBest: String(waterBest),
+              nutrientBest: String(nutrientBest),
+              dailyStepGoal: String(dailyStepGoal),
+              achievedBadges: JSON.stringify(
+                achievedBadges.map(({ id, streak }) => ({ id, streak })),
+              ),
+              achievedCount: String(achievedBadges.length),
+            },
+          })
+        }
         style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 14,
+          backgroundColor: colors.card,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: colors.secondaryText,
+          padding: 16,
+          marginBottom: 12,
         }}
       >
-        <View>
-          <Text
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View
             style={{
-              color: colors.text,
-              fontSize: 18,
-              fontWeight: "700",
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              backgroundColor: colors.background,
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 12,
             }}
           >
-            Badges
-          </Text>
-
-          <Text
-            style={{
-              color: colors.secondaryText,
-              fontSize: 12,
-              marginTop: 3,
-            }}
-          >
-            Your streak achievements
-          </Text>
+            <Ionicons name="flame" size={22} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}
+            >
+              Streak
+            </Text>
+            <Text
+              style={{
+                color: colors.secondaryText,
+                fontSize: 12,
+                marginTop: 2,
+              }}
+            >
+              {calorieCurrent} day{calorieCurrent === 1 ? "" : "s"} current ·{" "}
+              {calorieBest} best
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.secondaryText}
+          />
         </View>
 
         <View
           style={{
-            paddingHorizontal: 10,
-            paddingVertical: 5,
-            borderRadius: 12,
-            backgroundColor: colors.background,
-          }}
-        >
-          <Text
-            style={{
-              color: colors.secondaryText,
-              fontSize: 12,
-              fontWeight: "600",
-            }}
-          >
-            {achievedBadges.length}/{allBadges.length}
-          </Text>
-        </View>
-      </View>
-
-      {/* CALORIE STREAK SUMMARY */}
-      <View
-        style={{
-          flexDirection: "row",
-          marginBottom: 12,
-          padding: 12,
-          borderRadius: 12,
-          backgroundColor: colors.background,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.secondaryText, fontSize: 12 }}>
-            Current calorie streak
-          </Text>
-          <Text
-            style={{
-              color: colors.text,
-              fontSize: 20,
-              fontWeight: "700",
-              marginTop: 4,
-            }}
-          >
-            {calorieCurrent} days
-          </Text>
-        </View>
-
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.secondaryText, fontSize: 12 }}>
-            Best calorie streak
-          </Text>
-          <Text
-            style={{
-              color: colors.text,
-              fontSize: 20,
-              fontWeight: "700",
-              marginTop: 4,
-            }}
-          >
-            {calorieBest} days
-          </Text>
-        </View>
-      </View>
-
-      {/* STEP STREAK SUMMARY */}
-      <View
-        style={{
-          flexDirection: "row",
-          marginBottom: 16,
-          padding: 12,
-          borderRadius: 12,
-          backgroundColor: colors.background,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.secondaryText, fontSize: 12 }}>
-            Current steps streak
-          </Text>
-          <Text
-            style={{
-              color: colors.text,
-              fontSize: 20,
-              fontWeight: "700",
-              marginTop: 4,
-            }}
-          >
-            {stepCurrent} days
-          </Text>
-        </View>
-
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.secondaryText, fontSize: 12 }}>
-            Best steps streak
-          </Text>
-          <Text
-            style={{
-              color: colors.text,
-              fontSize: 20,
-              fontWeight: "700",
-              marginTop: 4,
-            }}
-          >
-            {stepBest} days
-          </Text>
-        </View>
-      </View>
-
-      {/* ACHIEVED */}
-      <Text
-        style={{
-          color: colors.text,
-          fontSize: 14,
-          fontWeight: "700",
-          marginBottom: 8,
-        }}
-      >
-        Achieved
-      </Text>
-
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          justifyContent: "flex-start",
-          marginHorizontal: -6,
-        }}
-      >
-        {achievedBadges.length > 0 ? (
-          achievedBadges.map(renderBadge)
-        ) : (
-          <Text
-            style={{
-              color: colors.secondaryText,
-              fontSize: 13,
-              paddingVertical: 10,
-            }}
-          >
-            No badges achieved yet.
-          </Text>
-        )}
-      </View>
-
-      {/* UNACHIEVED TOGGLE */}
-      {unachievedBadges.length > 0 && (
-        <Pressable
-          onPress={() => setShowUnachieved((previous) => !previous)}
-          style={{
             flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            paddingVertical: 12,
-            marginTop: 4,
+            justifyContent: "space-between",
+            marginTop: 18,
           }}
         >
-          <Text
-            style={{
-              color: colors.primary,
-              fontSize: 13,
-              fontWeight: "600",
-              marginRight: 5,
-            }}
-          >
-            {showUnachieved ? "Hide Unachieved" : "Show Unachieved"}
-          </Text>
+          {lastSevenDays.map((day) => {
+            const achieved = completedDays.has(day.key);
+            return (
+              <View key={day.key} style={{ alignItems: "center" }}>
+                <View
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 13,
+                    backgroundColor: achieved ? colors.primary : "transparent",
+                    borderWidth: 2,
+                    borderColor: achieved
+                      ? colors.primary
+                      : colors.secondaryText,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {achieved && (
+                    <Ionicons name="checkmark" size={14} color={colors.card} />
+                  )}
+                </View>
+                <Text
+                  style={{
+                    color: colors.secondaryText,
+                    fontSize: 10,
+                    marginTop: 5,
+                  }}
+                >
+                  {day.label}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+        <Text
+          style={{ color: colors.secondaryText, fontSize: 11, marginTop: 10 }}
+        >
+          Last 7 days · filled circles show goal achieved
+        </Text>
+      </Pressable>
 
-          <Ionicons
-            name={showUnachieved ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={colors.primary}
-          />
-        </Pressable>
-      )}
-
-      {/* UNACHIEVED */}
-      {showUnachieved && unachievedBadges.length > 0 && (
-        <View>
-          <Text
-            style={{
-              color: colors.text,
-              fontSize: 14,
-              fontWeight: "700",
-              marginBottom: 8,
-            }}
-          >
-            Unachieved
-          </Text>
-
+      <Pressable
+        accessibilityRole="button"
+        onPress={() =>
+          router.push({
+            pathname: "/milestones",
+            params: {
+              section: "badges",
+              calorieCurrent: String(calorieCurrent),
+              calorieBest: String(calorieBest),
+              stepCurrent: String(stepCurrent),
+              stepBest: String(stepBest),
+              waterBest: String(waterBest),
+              nutrientBest: String(nutrientBest),
+              dailyStepGoal: String(dailyStepGoal),
+              achievedBadges: JSON.stringify(
+                achievedBadges.map(({ id, streak }) => ({ id, streak })),
+              ),
+              achievedCount: String(achievedBadges.length),
+            },
+          })
+        }
+        style={{
+          backgroundColor: colors.card,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: colors.secondaryText,
+          padding: 16,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
           <View
             style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              justifyContent: "flex-start",
-              marginHorizontal: -6,
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              backgroundColor: colors.background,
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 12,
             }}
           >
-            {unachievedBadges.map(renderBadge)}
+            <Ionicons name="ribbon-outline" size={22} color={colors.primary} />
           </View>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}
+            >
+              Badges
+            </Text>
+            <Text
+              style={{
+                color: colors.secondaryText,
+                fontSize: 12,
+                marginTop: 2,
+              }}
+            >
+              {achievedBadges.length} earned
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.secondaryText}
+          />
         </View>
-      )}
+
+        <View
+          style={{ flexDirection: "row", alignItems: "center", marginTop: 12 }}
+        >
+          {(achievedBadges.length > 0
+            ? achievedBadges.slice(0, 5)
+            : allBadges.slice(0, 5)
+          ).map((badge) => (
+            <Image
+              key={badge.id}
+              source={badge.image}
+              resizeMode="contain"
+              style={{
+                width: 42,
+                height: 42,
+                marginRight: 8,
+                opacity: badge.achieved ? 1 : 0.3,
+              }}
+            />
+          ))}
+          {achievedBadges.length > 5 && (
+            <Text
+              style={{
+                color: colors.secondaryText,
+                fontSize: 12,
+                marginLeft: 2,
+              }}
+            >
+              +{achievedBadges.length - 5}
+            </Text>
+          )}
+        </View>
+      </Pressable>
     </View>
   );
 }

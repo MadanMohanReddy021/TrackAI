@@ -39,11 +39,14 @@ interface NutritionLog {
 // =====================================================
 
 interface StreakApiResponse {
-  data: {
+  data?: {
     calories?: StreakRecord[];
     water?: StreakRecord[];
     nutrients?: StreakRecord[];
   };
+  calories?: StreakRecord[];
+  water?: StreakRecord[];
+  nutrients?: StreakRecord[];
 }
 
 // =====================================================
@@ -200,12 +203,31 @@ export default function Progress() {
         //   }
         // }
         // -------------------------------------------
+        const streakRecords = streakData.data ?? streakData;
+        const calories = Array.isArray(streakRecords.calories)
+          ? streakRecords.calories
+          : [];
+        const water = Array.isArray(streakRecords.water)
+          ? streakRecords.water
+          : [];
+        const nutrients = Array.isArray(streakRecords.nutrients)
+          ? streakRecords.nutrients
+          : [];
 
-        setCalorieStreakData(streakData.data?.calories || []);
+        console.log("[Progress] get-streaks response mapping", {
+          responseKeys: Object.keys(streakData),
+          nestedDataKeys: streakData.data ? Object.keys(streakData.data) : null,
+          calorieRecords: calories.map(({ streakscore, streak_date }) => ({
+            streakscore,
+            streak_date,
+          })),
+          waterCount: water.length,
+          nutrientCount: nutrients.length,
+        });
 
-        setWaterStreakData(streakData.data?.water || []);
-
-        setNutrientStreakData(streakData.data?.nutrients || []);
+        setCalorieStreakData(calories);
+        setWaterStreakData(water);
+        setNutrientStreakData(nutrients);
       }
     } catch (error) {
       console.log("Progress API loading error:", error);

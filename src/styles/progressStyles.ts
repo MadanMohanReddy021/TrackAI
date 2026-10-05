@@ -5,6 +5,8 @@ export const createStyles = (colors: any) =>
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      marginTop: 0,
+      paddingTop: 20,
     },
     secondaryText: {
       color: colors.secondaryText,

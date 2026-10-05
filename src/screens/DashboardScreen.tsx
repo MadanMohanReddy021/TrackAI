@@ -100,6 +100,13 @@ type FoodLog = {
   analyzed_at: string;
 };
 
+const getLocalDateKey = (date: Date) =>
+  [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+
 const DashboardScreen = () => {
   const [steps, setSteps] = useState(0);
   const [marqueeMessage, setMarqueeMessage] = useState("");
@@ -162,9 +169,7 @@ const DashboardScreen = () => {
   const [profileName, setProfileName] = useState("");
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
+  const [selectedDate, setSelectedDate] = useState(getLocalDateKey(new Date()));
   const [water, setWater] = useState(0);
 
   const today = new Date();
@@ -173,7 +178,7 @@ const DashboardScreen = () => {
     const d = new Date(today);
     d.setDate(today.getDate() - (6 - i));
 
-    const formatted = d.toISOString().split("T")[0];
+    const formatted = getLocalDateKey(d);
 
     return {
       day: d.toLocaleDateString("en-US", { weekday: "short" }),
@@ -427,10 +432,11 @@ const DashboardScreen = () => {
         ]);
 
         // Create start and end of the selected day
-        const startOfDay = new Date(selectedDate);
+        const [year, month, day] = selectedDate.split("-").map(Number);
+        const startOfDay = new Date(year, month - 1, day);
         startOfDay.setHours(0, 0, 0, 0);
 
-        const endOfDay = new Date(selectedDate);
+        const endOfDay = new Date(year, month - 1, day);
         endOfDay.setHours(23, 59, 59, 999);
 
         const result = await readRecords("Steps", {
@@ -488,43 +494,49 @@ const DashboardScreen = () => {
           getSteps(userid, date),
         ]);
 
-      if (profileRes?.data && profileRes.data.userid) {
-        setProfile(profileRes.data);
-      } else if (!profile && (!profileRes || !profileRes.data)) {
-        router.replace("/onboarding");
-        return;
+      const apiProfile =
+        profileRes?.data?.data ?? profileRes?.data?.profile ?? profileRes?.data;
+
+      if (apiProfile?.userid) {
+        setProfile(apiProfile);
+      } else {
+        console.warn(
+          "Profile API returned no usable profile; staying on the dashboard.",
+          profileRes,
+        );
       }
 
-      setLogs(foodLogs || []);
-      setWater(waterVal || 0);
+      // These values must be applied regardless of whether profile data is valid.
+      setLogs(Array.isArray(foodLogs) ? foodLogs : []);
+      setWater(Number(waterVal) || 0);
 
-      try {
-        if (nutrientsResponse?.data?.[0]) {
-          const item = nutrientsResponse.data[0];
+      const nutrientBody = nutrientsResponse?.data;
+      const nutrientPayload =
+        nutrientBody?.data ??
+        nutrientBody?.result?.data ??
+        nutrientBody?.result ??
+        nutrientBody;
+      const nutrientItem = Array.isArray(nutrientPayload)
+        ? nutrientPayload[0]
+        : nutrientPayload;
 
-          console.log("Item:", item);
+      console.log("[Dashboard] Nutrient response mapping", {
+        selectedDate: date,
+        nutrientResponseKeys:
+          nutrientBody && typeof nutrientBody === "object"
+            ? Object.keys(nutrientBody)
+            : [],
+        mappedNutrients: nutrientItem ?? null,
+      });
 
-          setNutrients({
-            calories: Number(item.calories) || 0,
-            protein: Number(item.protein) || 0,
-            carbs: Number(item.carbs) || 0,
-            fat: Number(item.fat) || 0,
-            fiber: Number(item.fiber) || 0,
-            sugar: Number(item.sugar) || 0,
-          });
-        } else {
-          setNutrients({
-            calories: 0,
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-            fiber: 0,
-            sugar: 0,
-          });
-        }
-      } catch (e) {
-        console.error("Error reading nutrients:", e);
-      }
+      setNutrients({
+        calories: Number(nutrientItem?.calories) || 0,
+        protein: Number(nutrientItem?.protein) || 0,
+        carbs: Number(nutrientItem?.carbs) || 0,
+        fat: Number(nutrientItem?.fat) || 0,
+        fiber: Number(nutrientItem?.fiber) || 0,
+        sugar: Number(nutrientItem?.sugar) || 0,
+      });
     } catch (error: any) {
       Alert.alert("Error", error.message ?? "Failed loading dashboard");
     } finally {

@@ -1,6 +1,6 @@
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
-import { Home, TrendingUp, User } from "lucide-react-native";
+import { Bot, Home, TrendingUp, User } from "lucide-react-native";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -53,6 +53,12 @@ export default function Dashboard() {
             onPress={() => router.push("/progress")}
           />
 
+          <TabButton
+            icon={<Bot size={22} color={colors.secondaryText} />}
+            label="AIplanner"
+            active
+            onPress={() => router.push("/aiplanner")}
+          />
           <TabButton
             icon={<User size={22} color={colors.secondaryText} />}
             label="Profile"

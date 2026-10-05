@@ -20,7 +20,19 @@ export default function StepsChart({ stepLogs }: StepsChartProps) {
   const styles = createStyles(colors);
 
   const stepsData = {
-    labels: stepLogs.length ? stepLogs.map((item) => item.date) : ["No data"],
+    labels: stepLogs.length
+      ? stepLogs.map((item) => {
+          const [year, month, day] = item.date
+            .slice(0, 10)
+            .split("-")
+            .map(Number);
+
+          return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          });
+        })
+      : ["No data"],
 
     datasets: [
       {
@@ -37,88 +49,100 @@ export default function StepsChart({ stepLogs }: StepsChartProps) {
         styles.stepsChartCard,
         {
           backgroundColor: colors.card,
+          borderWidth: 1,
+          borderColor: colors.secondaryText,
         },
       ]}
     >
-      {/* Header */}
-
-      <View style={styles.stepsChartHeader}>
-        <View>
-          <Text
-            style={[
-              styles.stepsChartTitle,
-              {
-                color: colors.text,
-              },
-            ]}
-          >
-            Weekly Steps
-          </Text>
-
-          <Text
-            style={[
-              styles.stepsChartSubtitle,
-              {
-                color: colors.secondaryText,
-              },
-            ]}
-          >
-            Your steps for the last 7 days
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.stepsGoalBadge,
-            {
-              backgroundColor: colors.background,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.stepsGoalText,
-              {
-                color: colors.secondaryText,
-              },
-            ]}
-          >
-            5K goal
-          </Text>
-        </View>
-      </View>
-
-      {/* Chart */}
-
-      <BarChart
-        data={stepsData}
-        width={screenWidth - 70}
-        height={220}
-        fromZero
-        yAxisLabel=""
-        yAxisSuffix=""
-        showValuesOnTopOfBars={false}
-        withInnerLines={false}
-        withVerticalLabels
-        withHorizontalLabels
-        chartConfig={{
-          backgroundGradientFrom: colors.card,
-          backgroundGradientTo: colors.card,
-
-          decimalPlaces: 0,
-
-          color: (opacity = 1) => `rgba(75, 201, 169, ${opacity})`,
-
-          labelColor: () => colors.secondaryText,
-
-          barPercentage: 0.55,
-
-          propsForBackgroundLines: {
-            strokeWidth: 0,
+      {" "}
+      <View
+        style={[
+          styles.stepsChartCard,
+          {
+            backgroundColor: colors.card,
           },
-        }}
-        style={styles.stepsChart}
-      />
+        ]}
+      >
+        {/* Header */}
+
+        <View style={styles.stepsChartHeader}>
+          <View>
+            <Text
+              style={[
+                styles.stepsChartTitle,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              Weekly Steps
+            </Text>
+
+            <Text
+              style={[
+                styles.stepsChartSubtitle,
+                {
+                  color: colors.secondaryText,
+                },
+              ]}
+            >
+              Your steps for the last 7 days
+            </Text>
+          </View>
+
+          <View
+            style={[
+              styles.stepsGoalBadge,
+              {
+                backgroundColor: colors.background,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.stepsGoalText,
+                {
+                  color: colors.secondaryText,
+                },
+              ]}
+            >
+              5K goal
+            </Text>
+          </View>
+        </View>
+
+        {/* Chart */}
+
+        <BarChart
+          data={stepsData}
+          width={screenWidth - 70}
+          height={220}
+          fromZero
+          yAxisLabel=""
+          yAxisSuffix=""
+          showValuesOnTopOfBars={false}
+          withInnerLines={false}
+          withVerticalLabels
+          withHorizontalLabels
+          chartConfig={{
+            backgroundGradientFrom: colors.card,
+            backgroundGradientTo: colors.card,
+
+            decimalPlaces: 0,
+
+            color: (opacity = 1) => `rgba(75, 201, 169, ${opacity})`,
+
+            labelColor: () => colors.secondaryText,
+
+            barPercentage: 0.55,
+
+            propsForBackgroundLines: {
+              strokeWidth: 0,
+            },
+          }}
+          style={styles.stepsChart}
+        />
+      </View>{" "}
     </View>
   );
 }

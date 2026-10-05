@@ -208,6 +208,8 @@ export default function ProgressCharts({
           styles.progressChartCard,
           {
             backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.secondaryText,
           },
         ]}
       >
@@ -292,6 +294,8 @@ export default function ProgressCharts({
           styles.progressChartCard,
           {
             backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.secondaryText,
           },
         ]}
       >
