@@ -1,18 +1,19 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { BlurView } from "expo-blur";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Animated,
-  ScrollView,
+  Animated, Platform, ScrollView,
   Text,
   TouchableOpacity,
   useColorScheme,
-  View,
+  View
 } from "react-native";
+import AppleHealthKit from "react-native-health";
 import {
   initialize,
   readRecords,
@@ -413,25 +414,11 @@ const DashboardScreen = () => {
   //----------------------------------------------- getting steps from the health connect--------------------------------------------------------------
 
   useEffect(() => {
+    let cancelled = false;
+
     const loadSteps = async () => {
       try {
-        // Initialize Health Connect
-        const isInitialized = await initialize();
-
-        if (!isInitialized) {
-          console.log("Health Connect initialization failed");
-          return;
-        }
-
-        // Request permission
-        await requestPermission([
-          {
-            accessType: "read",
-            recordType: "Steps",
-          },
-        ]);
-
-        // Create start and end of the selected day
+        // selectedDate must be YYYY-MM-DD
         const [year, month, day] = selectedDate.split("-").map(Number);
         const startOfDay = new Date(year, month - 1, day);
         startOfDay.setHours(0, 0, 0, 0);
@@ -439,30 +426,93 @@ const DashboardScreen = () => {
         const endOfDay = new Date(year, month - 1, day);
         endOfDay.setHours(23, 59, 59, 999);
 
-        const result = await readRecords("Steps", {
-          timeRangeFilter: {
-            operator: "between",
-            startTime: startOfDay.toISOString(),
-            endTime: endOfDay.toISOString(),
-          },
-        });
+        let totalSteps = 0;
 
-        const totalSteps = result.records.reduce(
-          (sum, record) => sum + record.count,
-          0,
-        );
+        if (Platform.OS === "android") {
+          const isInitialized = await initialize();
 
-        setSteps(totalSteps);
+          if (!isInitialized) {
+            throw new Error("Health Connect initialization failed");
+          }
 
-        console.log(`Steps for ${selectedDate}:`, totalSteps);
+          await requestPermission([
+            { accessType: "read", recordType: "Steps" },
+          ]);
+
+          const result = await readRecords("Steps", {
+            timeRangeFilter: {
+              operator: "between",
+              startTime: startOfDay.toISOString(),
+              endTime: endOfDay.toISOString(),
+            },
+          });
+
+          totalSteps = result.records.reduce(
+            (sum, record) => sum + record.count,
+            0,
+          );
+        } else if (Platform.OS === "ios") {
+          const available = await new Promise<boolean>((resolve, reject) => {
+            AppleHealthKit.isAvailable((error, isAvailable) => {
+              if (error) reject(error);
+              else resolve(isAvailable);
+            });
+          });
+
+          if (!available) {
+            throw new Error("Apple Health is unavailable on this device");
+          }
+
+          await new Promise<void>((resolve, reject) => {
+            AppleHealthKit.initHealthKit(
+              {
+                permissions: {
+                  read: [AppleHealthKit.Constants.Permissions.StepCount],
+                  write: [],
+                },
+              },
+              (error) => {
+                if (error) reject(new Error(String(error)));
+                else resolve();
+              },
+            );
+          });
+
+          const result = await new Promise<{ value: number }>(
+            (resolve, reject) => {
+              AppleHealthKit.getStepCount(
+                { date: startOfDay.toISOString() },
+                (error, value) => {
+                  if (error) reject(error);
+                  else resolve(value);
+                },
+              );
+            },
+          );
+
+          totalSteps = result.value ?? 0;
+        } else {
+          throw new Error(`Step reading is unsupported on ${Platform.OS}`);
+        }
+
+        if (!cancelled) {
+          setSteps(totalSteps);
+          console.log(`Steps for ${selectedDate}:`, totalSteps);
+        }
       } catch (error) {
-        console.log("Error loading steps:", error);
+        if (!cancelled) {
+          console.log("Error loading steps:", error);
+        }
       }
     };
 
     if (selectedDate) {
       loadSteps();
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedDate]);
   //----------------------------------------------- getting steps from the health connect--------------------------------------------------------------
 
@@ -574,6 +624,32 @@ const DashboardScreen = () => {
   const sugarTarget = Number(profile?.sugar) || 30;
   return (
     <View style={styles.container}>
+      <View
+        style={[
+          styles.backgroundGlow,
+          styles.glowOne,
+          { backgroundColor: colors.backgroundGlow1 },
+        ]}
+      />
+
+      <View
+        style={[
+          styles.backgroundGlow,
+          styles.glowTwo,
+          { backgroundColor: colors.backgroundGlow2 },
+        ]}
+      />
+
+      <View
+        style={[
+          styles.backgroundGlow,
+          styles.glowThree,
+          { backgroundColor: colors.backgroundGlow3 },
+        ]}
+      />
+
+      <BlurView intensity={90} tint="default" style={styles.absoluteFill} />
+
       <Text style={styles.title}>TrackAI</Text>
       {showMarquee && marqueeMessage && (
         <View style={styles.marqueeContainer}>

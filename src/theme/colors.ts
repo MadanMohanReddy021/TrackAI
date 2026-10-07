@@ -1,6 +1,17 @@
 export const LightTheme = {
   background: "#ffffff",
   card: "#fbffff",
+
+  // Diffused background colors
+  backgroundGradient: [
+    "#a999d3", // soft purple
+    "#DFF6FF", // soft blue
+    "#FFE4F1", // soft pink
+  ],
+  // LightTheme
+  backgroundGlow1: "#DCCBFF",
+  backgroundGlow2: "#BDEBFF",
+  backgroundGlow3: "#FFD1E8",
   primary: "#0d0a02d1",
   text: "#1A1A1A",
   secondaryText: "#2d2921",
@@ -23,6 +34,13 @@ export const LightTheme = {
 export const DarkTheme = {
   background: "#121212",
   card: "#1E1E1E",
+
+  // Diffused background colors
+  backgroundGradient: ["#21183A", "#102D3A", "#351D2D"],
+  // DarkTheme
+  backgroundGlow1: "#38245C",
+  backgroundGlow2: "#123C4A",
+  backgroundGlow3: "#54263F",
   primary: "#edf5f2",
   text: "#FFFFFF",
   secondaryText: "#d2cfcf",

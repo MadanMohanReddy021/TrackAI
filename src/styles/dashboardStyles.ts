@@ -2,6 +2,28 @@ import { StyleSheet } from "react-native";
 
 export const createStyles = (colors: any) =>
   StyleSheet.create({
+    backgroundGlow: {
+      position: "absolute",
+      width: 300,
+      height: 300,
+      borderRadius: 150,
+      opacity: 0.45,
+    },
+
+    glowOne: {
+      top: -112,
+      left: -100,
+    },
+
+    glowTwo: {
+      top: 150,
+      right: -130,
+    },
+
+    glowThree: {
+      bottom: -120,
+      left: 80,
+    },
     container: {
       flex: 1,
       backgroundColor: colors.background,
@@ -128,7 +150,7 @@ export const createStyles = (colors: any) =>
       marginTop: 12,
       marginBottom: 20,
       paddingVertical: 0,
-      backgroundColor: colors.background,
+      // backgroundColor: colors.background,
       letterSpacing: 1,
     },
     calorieTitle: {
